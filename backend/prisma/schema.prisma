@@ -1,0 +1,83 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id                String         @id @default(uuid())
+  email             String         @unique
+  passwordHash      String?
+  googleId          String?        @unique
+  avatarUrl         String?
+  isVerified        Boolean        @default(false)
+  verificationToken String?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  
+  settings          UserSettings?
+  notebooks         Notebook[]
+  entries           JournalEntry[]
+  tags              Tag[]
+}
+
+model UserSettings {
+  id            String    @id @default(uuid())
+  theme         String    @default("light")
+  dailyReminder DateTime? 
+  userId        String    @unique
+  user          User      @relation(fields: [userId], references: [id])
+}
+
+model Notebook {
+  id          String         @id @default(uuid())
+  title       String
+  description String?
+  coverImage  String?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  userId      String
+  user        User           @relation(fields: [userId], references: [id])
+  entries     JournalEntry[]
+}
+
+model JournalEntry {
+  id          String            @id @default(uuid())
+  title       String
+  content     String
+  mood        String?
+  date        DateTime          @default(now())
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  
+  userId      String
+  user        User              @relation(fields: [userId], references: [id])
+  notebookId  String?
+  notebook    Notebook?         @relation(fields: [notebookId], references: [id])
+  
+  attachments EntryAttachment[]
+  tags        Tag[]
+}
+
+model EntryAttachment {
+  id        String       @id @default(uuid())
+  url       String
+  fileType  String
+  createdAt DateTime     @default(now())
+  entryId   String
+  entry     JournalEntry @relation(fields: [entryId], references: [id])
+}
+
+model Tag {
+  id      String         @id @default(uuid())
+  name    String
+  userId  String
+  user    User           @relation(fields: [userId], references: [id])
+  entries JournalEntry[]
+
+  @@unique([name, userId])
+}
