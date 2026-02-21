@@ -3,64 +3,94 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// User & Settings
+// ─────────────────────────────────────────────────────────────────────────────
+
 model User {
-  id                String         @id @default(uuid())
-  email             String         @unique
-  passwordHash      String?
-  googleId          String?        @unique
-  avatarUrl         String?
-  isVerified        Boolean        @default(false)
-  verificationToken String?
-  createdAt         DateTime       @default(now())
-  updatedAt         DateTime       @updatedAt
-  
-  settings          UserSettings?
-  notebooks         Notebook[]
-  entries           JournalEntry[]
-  tags              Tag[]
+  id                     String          @id @default(uuid())
+  email                  String          @unique
+  fullName               String?
+  passwordHash           String?
+  googleId               String?         @unique
+  avatarUrl              String?
+  isVerified             Boolean         @default(false)
+  verificationToken      String?
+  commentTokensUsedToday Int             @default(0)
+  lastCommentResetDate   DateTime        @default(now())
+  createdAt              DateTime        @default(now())
+  updatedAt              DateTime        @updatedAt
+
+  settings  UserSettings?
+  notebooks Notebook[]
+  entries   JournalEntry[]
+  tags      Tag[]
+  members   JournalMember[]
+  reactions Reaction[]
+  comments  Comment[]
 }
 
 model UserSettings {
   id            String    @id @default(uuid())
   theme         String    @default("light")
-  dailyReminder DateTime? 
+  dailyReminder DateTime?
   userId        String    @unique
-  user          User      @relation(fields: [userId], references: [id])
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Notebooks (Journals) — Personal & Team
+// ─────────────────────────────────────────────────────────────────────────────
+
 model Notebook {
-  id          String         @id @default(uuid())
+  id          String          @id @default(uuid())
   title       String
   description String?
   coverImage  String?
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
+  type        String          @default("personal") // "personal" | "team"
+  inviteCode  String?         @unique              // shareable join link for team journals
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
   userId      String
-  user        User           @relation(fields: [userId], references: [id])
-  entries     JournalEntry[]
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  entries        JournalEntry[]
+  members        JournalMember[]
+  invites        Invite[]
+  communityPosts CommunityPost[]
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Journal Entries
+// ─────────────────────────────────────────────────────────────────────────────
+
 model JournalEntry {
-  id          String            @id @default(uuid())
+  id          String   @id @default(uuid())
   title       String
   content     String
   mood        String?
-  date        DateTime          @default(now())
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
-  
-  userId      String
-  user        User              @relation(fields: [userId], references: [id])
-  notebookId  String?
-  notebook    Notebook?         @relation(fields: [notebookId], references: [id])
-  
-  attachments EntryAttachment[]
-  tags        Tag[]
+  date        DateTime @default(now())
+  shareMode   String   @default("private") // "private" | "link" | "community"
+  shareToken  String?  @unique             // for read-only link sharing
+  isAnonymous Boolean  @default(false)     // hide author in community feed
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  notebookId String?
+  notebook   Notebook? @relation(fields: [notebookId], references: [id], onDelete: SetNull)
+
+  attachments    EntryAttachment[]
+  tags           Tag[]
+  reactions      Reaction[]
+  comments       Comment[]
+  communityPost  CommunityPost?
 }
 
 model EntryAttachment {
@@ -69,15 +99,82 @@ model EntryAttachment {
   fileType  String
   createdAt DateTime     @default(now())
   entryId   String
-  entry     JournalEntry @relation(fields: [entryId], references: [id])
+  entry     JournalEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Tags
+// ─────────────────────────────────────────────────────────────────────────────
 
 model Tag {
   id      String         @id @default(uuid())
   name    String
   userId  String
-  user    User           @relation(fields: [userId], references: [id])
+  user    User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   entries JournalEntry[]
 
   @@unique([name, userId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Collaboration — Team Journal Members & Invites
+// ─────────────────────────────────────────────────────────────────────────────
+
+model JournalMember {
+  id         String   @id @default(uuid())
+  role       String   @default("editor") // "owner" | "editor" | "viewer"
+  joinedAt   DateTime @default(now())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  notebookId String
+  notebook   Notebook @relation(fields: [notebookId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, notebookId])
+}
+
+model Invite {
+  id         String   @id @default(uuid())
+  email      String?
+  token      String   @unique @default(uuid())
+  status     String   @default("pending") // "pending" | "accepted" | "expired"
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  notebookId String
+  notebook   Notebook @relation(fields: [notebookId], references: [id], onDelete: Cascade)
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Community — Reactions, Comments & Feed
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Reaction {
+  id        String       @id @default(uuid())
+  type      String                             // "support" | "heart" | "thoughtful"
+  createdAt DateTime     @default(now())
+  userId    String
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  entryId   String
+  entry     JournalEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, entryId]) // one reaction per user per entry
+}
+
+model Comment {
+  id        String       @id @default(uuid())
+  content   String
+  createdAt DateTime     @default(now())
+  userId    String
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  entryId   String
+  entry     JournalEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+}
+
+model CommunityPost {
+  id          String       @id @default(uuid())
+  isAnonymous Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  entryId     String       @unique
+  entry       JournalEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  notebookId  String
+  notebook    Notebook     @relation(fields: [notebookId], references: [id])
 }
