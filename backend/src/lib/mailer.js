@@ -51,6 +51,15 @@ export const sendVerificationEmail = async (toEmail, token) => {
  * @param {string} token - Invite token
  * @param {object} inviter - User object of the person sending the invite
  */
+// Escape user-controlled strings before inserting into HTML email templates
+const htmlEscape = (str) =>
+  String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+
 export const sendInviteEmail = async (
   toEmail,
   notebookTitle,
@@ -68,17 +77,18 @@ export const sendInviteEmail = async (
   });
 
   const joinUrl = `${process.env.CLIENT_URL}/join/${token}`;
-  const inviterName = inviter.fullName || inviter.email;
+  const inviterName = htmlEscape(inviter.fullName || inviter.email);
+  const safeTitle = htmlEscape(notebookTitle);
 
   await transporter.sendMail({
     from: `"Dearly" <${process.env.SMTP_USER}>`,
     to: toEmail,
-    subject: `${inviterName} invited you to journal together on Dearly`,
+    subject: `${inviter.fullName || inviter.email} invited you to journal together on Dearly`,
     html: `
       <div style="font-family: sans-serif; max-width: 480px; margin: auto;">
         <h2>You're invited to collaborate 📓</h2>
         <p><strong>${inviterName}</strong> has invited you to join their journal
-          <strong>"${notebookTitle}"</strong> on Dearly.</p>
+          <strong>"${safeTitle}"</strong> on Dearly.</p>
         <a href="${joinUrl}" style="
           display: inline-block;
           padding: 12px 24px;
