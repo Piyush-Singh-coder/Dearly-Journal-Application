@@ -43,3 +43,56 @@ export const sendVerificationEmail = async (toEmail, token) => {
     `,
   });
 };
+
+/**
+ * Sends a team notebook invitation email.
+ * @param {string} toEmail - Recipient email
+ * @param {string} notebookTitle - Name of the journal being shared
+ * @param {string} token - Invite token
+ * @param {object} inviter - User object of the person sending the invite
+ */
+export const sendInviteEmail = async (
+  toEmail,
+  notebookTitle,
+  token,
+  inviter,
+) => {
+  const transporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port: Number(process.env.SMTP_PORT) || 587,
+    secure: false,
+    auth: {
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS,
+    },
+  });
+
+  const joinUrl = `${process.env.CLIENT_URL}/join/${token}`;
+  const inviterName = inviter.fullName || inviter.email;
+
+  await transporter.sendMail({
+    from: `"Dearly" <${process.env.SMTP_USER}>`,
+    to: toEmail,
+    subject: `${inviterName} invited you to journal together on Dearly`,
+    html: `
+      <div style="font-family: sans-serif; max-width: 480px; margin: auto;">
+        <h2>You're invited to collaborate 📓</h2>
+        <p><strong>${inviterName}</strong> has invited you to join their journal
+          <strong>"${notebookTitle}"</strong> on Dearly.</p>
+        <a href="${joinUrl}" style="
+          display: inline-block;
+          padding: 12px 24px;
+          background: #6366f1;
+          color: white;
+          border-radius: 8px;
+          text-decoration: none;
+          font-weight: bold;
+          margin-top: 12px;
+        ">Accept Invitation</a>
+        <p style="margin-top:16px; color: #888; font-size:12px;">
+          This invite link expires in 7 days. If you don't know this person, ignore this email.
+        </p>
+      </div>
+    `,
+  });
+};

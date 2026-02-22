@@ -321,6 +321,18 @@ export const joinByInvite = async (req, res) => {
       return res.status(400).json({ message: "This invite link has expired." });
     }
 
+    // Enforce that only the invited email can accept — prevents invite hijacking
+    if (
+      invite.email &&
+      invite.email.trim().toLowerCase() !== req.user.email.trim().toLowerCase()
+    ) {
+      return res
+        .status(403)
+        .json({
+          message: "This invite was sent to a different email address.",
+        });
+    }
+
     // Check if already a member
     const existingMember = await prisma.journalMember.findUnique({
       where: {
@@ -383,23 +395,22 @@ export const removeMember = async (req, res) => {
         .json({ message: "Only the owner can remove other members." });
     }
     if (targetUserId === notebook.userId) {
-      return res
-        .status(400)
-        .json({
-          message:
-            "The owner cannot be removed. Transfer ownership or delete the notebook.",
-        });
+      return res.status(400).json({
+        message:
+          "The owner cannot be removed. Transfer ownership or delete the notebook.",
+      });
     }
 
-    await prisma.journalMember.delete({
-      where: { userId_notebookId: { userId: targetUserId, notebookId } },
+    const result = await prisma.journalMember.deleteMany({
+      where: { userId: targetUserId, notebookId },
     });
+    if (result.count === 0) {
+      return res.status(404).json({ message: "Member not found." });
+    }
 
-    return res
-      .status(200)
-      .json({
-        message: isSelf ? "You have left the notebook." : "Member removed.",
-      });
+    return res.status(200).json({
+      message: isSelf ? "You have left the notebook." : "Member removed.",
+    });
   } catch (error) {
     console.error("Remove member error:", error);
     return res.status(500).json({ message: "Internal server error." });

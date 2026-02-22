@@ -23,11 +23,9 @@ export const createEntry = async (req, res) => {
 
   const validShareModes = ["private", "link", "community"];
   if (shareMode && !validShareModes.includes(shareMode)) {
-    return res
-      .status(400)
-      .json({
-        message: "Invalid shareMode. Must be: private, link, or community.",
-      });
+    return res.status(400).json({
+      message: "Invalid shareMode. Must be: private, link, or community.",
+    });
   }
 
   try {
@@ -105,9 +103,12 @@ export const createEntry = async (req, res) => {
 // Supports: ?notebookId=, ?mood=, ?shareMode=, ?tag=, ?page=, ?limit=
 // ─────────────────────────────────────────────────────────────────────────────
 export const getEntries = async (req, res) => {
-  const { notebookId, mood, shareMode, tag, page = 1, limit = 20 } = req.query;
+  const { notebookId, mood, shareMode, tag } = req.query;
 
-  const skip = (Number(page) - 1) * Number(limit);
+  // Validate and clamp pagination — prevent NaN/negative values
+  const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+  const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 20));
+  const skip = (page - 1) * limit;
 
   const where = {
     userId: req.user.id,
@@ -123,7 +124,7 @@ export const getEntries = async (req, res) => {
         where,
         orderBy: { date: "desc" },
         skip,
-        take: Number(limit),
+        take: limit,
         include: {
           tags: true,
           notebook: { select: { id: true, title: true } },
@@ -139,9 +140,9 @@ export const getEntries = async (req, res) => {
       entries,
       pagination: {
         total,
-        page: Number(page),
-        limit: Number(limit),
-        totalPages: Math.ceil(total / Number(limit)),
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
       },
     });
   } catch (error) {
@@ -156,6 +157,7 @@ export const getEntries = async (req, res) => {
 // ─────────────────────────────────────────────────────────────────────────────
 export const getEntryById = async (req, res) => {
   const { id } = req.params;
+  const { shareToken: queryShareToken } = req.query;
 
   try {
     const entry = await prisma.journalEntry.findUnique({
@@ -172,9 +174,28 @@ export const getEntryById = async (req, res) => {
       return res.status(404).json({ message: "Entry not found." });
     }
 
-    // Only the owner (or notebook members) can access the full entry
     if (entry.userId !== req.user.id) {
-      return res.status(403).json({ message: "Access denied." });
+      // Allow access via a valid share token
+      const tokenMatches =
+        entry.shareToken && queryShareToken === entry.shareToken;
+
+      // Allow access if the user is a notebook member
+      let isMember = false;
+      if (!tokenMatches && entry.notebookId) {
+        const membership = await prisma.journalMember.findUnique({
+          where: {
+            userId_notebookId: {
+              userId: req.user.id,
+              notebookId: entry.notebookId,
+            },
+          },
+        });
+        isMember = !!membership;
+      }
+
+      if (!tokenMatches && !isMember) {
+        return res.status(403).json({ message: "Access denied." });
+      }
     }
 
     return res.status(200).json({ entry });
@@ -203,11 +224,9 @@ export const updateEntry = async (req, res) => {
 
   const validShareModes = ["private", "link", "community"];
   if (shareMode && !validShareModes.includes(shareMode)) {
-    return res
-      .status(400)
-      .json({
-        message: "Invalid shareMode. Must be: private, link, or community.",
-      });
+    return res.status(400).json({
+      message: "Invalid shareMode. Must be: private, link, or community.",
+    });
   }
 
   try {
@@ -218,6 +237,31 @@ export const updateEntry = async (req, res) => {
     }
     if (existing.userId !== req.user.id) {
       return res.status(403).json({ message: "Access denied." });
+    }
+
+    // Re-validate access when moving the entry to a different notebook
+    if (notebookId !== undefined && notebookId !== existing.notebookId) {
+      const targetNotebook = await prisma.notebook.findFirst({
+        where: {
+          id: notebookId,
+          OR: [
+            { userId: req.user.id },
+            {
+              members: {
+                some: {
+                  userId: req.user.id,
+                  role: { in: ["owner", "editor"] },
+                },
+              },
+            },
+          ],
+        },
+      });
+      if (!targetNotebook) {
+        return res
+          .status(403)
+          .json({ message: "Access denied to target notebook." });
+      }
     }
 
     // Generate share token if switching to "link" mode for the first time
