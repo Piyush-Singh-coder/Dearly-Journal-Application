@@ -13,16 +13,7 @@ import PersonalJournal from "./pages/PersonalJournal";
 // import EntryEditor from './pages/EntryEditor';
 
 const ProtectedRoute = ({ children }) => {
-  const { isAuthenticated, isLoading } = useAuthStore();
-
-  if (isLoading) {
-    return (
-      <div className="h-screen w-full flex items-center justify-center">
-        Loading...
-      </div>
-    );
-  }
-
+  const { isAuthenticated } = useAuthStore();
   return isAuthenticated ? children : <Navigate to="/auth" replace />;
 };
 
@@ -60,12 +51,13 @@ function App() {
           <Route
             path="/dashboard"
             element={
-              // <ProtectedRoute>
+              <ProtectedRoute>
                 <DashboardLayout />
-              // </ProtectedRoute>
+              </ProtectedRoute>
             }
           >
             <Route index element={<PersonalJournal />} />
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
             {/* 
             <Route path="team" element={<TeamLayout />} />
             <Route path="community" element={<CommunityFeed />} />

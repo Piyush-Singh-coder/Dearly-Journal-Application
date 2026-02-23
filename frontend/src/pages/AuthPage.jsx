@@ -30,11 +30,9 @@ export default function AuthPage() {
       if (isLogin) {
         await login({ email, password });
         toast.success("Welcome back!");
-        navigate("/dashboard");
       } else {
         await signup({ email, password, fullName });
         toast.success("Account created successfully!");
-        navigate("/dashboard");
       }
     } catch (err) {
       toast.error(
@@ -83,10 +81,14 @@ export default function AuthPage() {
                   transition={{ duration: 0.2 }}
                   className="flex flex-col"
                 >
-                  <label className="text-sm text-[#1D1B20] dark:text-[#E6E1E5] font-medium mb-1 ml-1 cursor-pointer">
+                  <label
+                    htmlFor="fullName"
+                    className="text-sm text-slate-900 dark:text-white font-medium mb-1 ml-1 cursor-pointer"
+                  >
                     Full Name
                   </label>
                   <input
+                    id="fullName"
                     type="text"
                     required={!isLogin}
                     value={fullName}
@@ -99,10 +101,14 @@ export default function AuthPage() {
             </AnimatePresence>
 
             <div className="flex flex-col">
-              <label className="text-sm text-[#1D1B20] dark:text-[#E6E1E5] font-medium mb-1 ml-1 cursor-pointer">
+              <label
+                htmlFor="email"
+                className="text-sm text-slate-900 dark:text-white font-medium mb-1 ml-1 cursor-pointer"
+              >
                 Email
               </label>
               <input
+                id="email"
                 type="email"
                 required
                 value={email}
@@ -113,10 +119,14 @@ export default function AuthPage() {
             </div>
 
             <div className="flex flex-col">
-              <label className="text-sm text-[#1D1B20] dark:text-[#E6E1E5] font-medium mb-1 ml-1 cursor-pointer">
+              <label
+                htmlFor="password"
+                className="text-sm text-slate-900 dark:text-white font-medium mb-1 ml-1 cursor-pointer"
+              >
                 Password
               </label>
               <input
+                id="password"
                 type="password"
                 required
                 value={password}

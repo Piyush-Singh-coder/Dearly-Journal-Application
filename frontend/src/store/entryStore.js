@@ -5,65 +5,93 @@ export const useEntryStore = create((set, get) => ({
   entries: [],
   currentEntry: null,
   pagination: null,
+  loadingCount: 0,
   isLoading: false,
   error: null,
 
   fetchEntries: async (filters = {}) => {
-    set({ isLoading: true, error: null });
+    set((state) => ({
+      loadingCount: state.loadingCount + 1,
+      isLoading: true,
+      error: null,
+    }));
     try {
       const queryParams = new URLSearchParams(filters).toString();
       const res = await axiosInstance.get(`/entries?${queryParams}`);
       set({
         entries: res.data.entries,
         pagination: res.data.pagination,
-        isLoading: false,
       });
     } catch (error) {
       set({
         error: error.response?.data?.message || "Error fetching entries",
-        isLoading: false,
+      });
+      throw error;
+    } finally {
+      set((state) => {
+        const count = Math.max(0, state.loadingCount - 1);
+        return { loadingCount: count, isLoading: count > 0 };
       });
     }
   },
 
   fetchEntryById: async (id, shareToken = null) => {
-    set({ isLoading: true, error: null });
+    set((state) => ({
+      loadingCount: state.loadingCount + 1,
+      isLoading: true,
+      error: null,
+    }));
     try {
       const url = shareToken
         ? `/entries/${id}?shareToken=${shareToken}`
         : `/entries/${id}`;
       const res = await axiosInstance.get(url);
-      set({ currentEntry: res.data.entry, isLoading: false });
+      set({ currentEntry: res.data.entry });
       return res.data.entry;
     } catch (error) {
       set({
         error: error.response?.data?.message || "Error fetching entry",
-        isLoading: false,
       });
       throw error;
+    } finally {
+      set((state) => {
+        const count = Math.max(0, state.loadingCount - 1);
+        return { loadingCount: count, isLoading: count > 0 };
+      });
     }
   },
 
   createEntry: async (data) => {
-    set({ isLoading: true, error: null });
+    set((state) => ({
+      loadingCount: state.loadingCount + 1,
+      isLoading: true,
+      error: null,
+    }));
     try {
       const res = await axiosInstance.post("/entries", data);
       set((state) => ({
         entries: [res.data.entry, ...state.entries],
-        isLoading: false,
       }));
       return res.data.entry;
     } catch (error) {
       set({
         error: error.response?.data?.message || "Error creating entry",
-        isLoading: false,
       });
       throw error;
+    } finally {
+      set((state) => {
+        const count = Math.max(0, state.loadingCount - 1);
+        return { loadingCount: count, isLoading: count > 0 };
+      });
     }
   },
 
   updateEntry: async (id, data) => {
-    set({ isLoading: true, error: null });
+    set((state) => ({
+      loadingCount: state.loadingCount + 1,
+      isLoading: true,
+      error: null,
+    }));
     try {
       const res = await axiosInstance.put(`/entries/${id}`, data);
       set((state) => ({
@@ -72,33 +100,43 @@ export const useEntryStore = create((set, get) => ({
         ),
         currentEntry:
           state.currentEntry?.id === id ? res.data.entry : state.currentEntry,
-        isLoading: false,
       }));
       return res.data.entry;
     } catch (error) {
       set({
         error: error.response?.data?.message || "Error updating entry",
-        isLoading: false,
       });
       throw error;
+    } finally {
+      set((state) => {
+        const count = Math.max(0, state.loadingCount - 1);
+        return { loadingCount: count, isLoading: count > 0 };
+      });
     }
   },
 
   deleteEntry: async (id) => {
-    set({ isLoading: true, error: null });
+    set((state) => ({
+      loadingCount: state.loadingCount + 1,
+      isLoading: true,
+      error: null,
+    }));
     try {
       await axiosInstance.delete(`/entries/${id}`);
       set((state) => ({
         entries: state.entries.filter((entry) => entry.id !== id),
         currentEntry: state.currentEntry?.id === id ? null : state.currentEntry,
-        isLoading: false,
       }));
     } catch (error) {
       set({
         error: error.response?.data?.message || "Error deleting entry",
-        isLoading: false,
       });
       throw error;
+    } finally {
+      set((state) => {
+        const count = Math.max(0, state.loadingCount - 1);
+        return { loadingCount: count, isLoading: count > 0 };
+      });
     }
   },
 }));

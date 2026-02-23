@@ -30,7 +30,7 @@ export const useCommunityStore = create((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       await axiosInstance.post(`/community/reaction/${entryId}`, { type });
-      // Refresh feed slightly out of band or update local state depending on needs
+      await get().fetchFeed(get().feedPagination?.currentPage || 1);
       set({ isLoading: false });
     } catch (error) {
       set({
@@ -45,6 +45,7 @@ export const useCommunityStore = create((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       await axiosInstance.delete(`/community/reaction/${entryId}`);
+      await get().fetchFeed(get().feedPagination?.currentPage || 1);
       set({ isLoading: false });
     } catch (error) {
       set({

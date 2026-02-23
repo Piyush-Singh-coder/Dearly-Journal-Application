@@ -1,0 +1,10 @@
+{
+  "css": {
+    "parser": {
+      "cssModules": false
+    },
+    "linter": {
+      "enabled": true
+    }
+  }
+}

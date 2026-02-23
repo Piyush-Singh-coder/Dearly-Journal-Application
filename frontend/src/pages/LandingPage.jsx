@@ -22,7 +22,7 @@ export default function LandingPage() {
           </div>
         </div>
 
-        <h1 className="text-[#1D1B20] dark:text-[#E6E1E5] mb-6 tracking-tight">
+        <h1 className="text-slate-900 dark:text-white mb-6 tracking-tight">
           Write what matters.
         </h1>
 
@@ -50,18 +50,18 @@ export default function LandingPage() {
           <div className="flex items-start gap-4">
             <Shield className="w-6 h-6 text-primary mt-1" />
             <div>
-              <h4 className="font-medium text-[#1D1B20] dark:text-[#E6E1E5] text-lg">
+              <h4 className="font-medium text-slate-900 dark:text-white text-lg">
                 Safe space
               </h4>
               <p className="text-secondary dark:text-secondary-dark text-sm mt-1">
-                End-to-end encrypted feel. Your thoughts remain yours alone.
+                Your data is encrypted in transit and at rest.
               </p>
             </div>
           </div>
           <div className="flex items-start gap-4">
             <Users className="w-6 h-6 text-tertiary mt-1" />
             <div>
-              <h4 className="font-medium text-[#1D1B20] dark:text-[#E6E1E5] text-lg">
+              <h4 className="font-medium text-slate-900 dark:text-white text-lg">
                 Shared gently
               </h4>
               <p className="text-secondary dark:text-secondary-dark text-sm mt-1">

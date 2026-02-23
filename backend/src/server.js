@@ -8,16 +8,19 @@ import entryRoute from "./routes/entryRoute.js";
 import notebookRoute from "./routes/notebookRoute.js";
 import communityRoute from "./routes/communityRoute.js";
 
-
 const app = express();
 const server = http.createServer(app);
 
 //Cors
-app.use(cors());
+app.use(
+  cors({
+    origin: process.env.CLIENT_URL || "http://localhost:5173",
+    credentials: true,
+  }),
+);
 
 // Initialize WebSockets
 setupSocket(server);
-
 
 app.use(express.json());
 app.use("/api/auth", authRoute);

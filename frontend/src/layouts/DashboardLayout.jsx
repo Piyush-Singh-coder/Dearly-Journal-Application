@@ -14,22 +14,21 @@ import {
 import clsx from "clsx";
 import { motion, AnimatePresence } from "framer-motion";
 
-const NAV_ITEMS = [
-  { name: "Home", path: "/dashboard", icon: Home, end: true },
-  { name: "Personal", path: "/dashboard/personal", icon: User },
-  { name: "Team", path: "/dashboard/team", icon: Users },
-  { name: "Community", path: "/dashboard/community", icon: Globe },
-  { name: "Settings", path: "/dashboard/settings", icon: Settings },
-];
+const NAV_ITEMS = [{ name: "Home", path: "/dashboard", icon: Home, end: true }];
 
 export default function DashboardLayout() {
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  const handleLogout = () => {
-    logout();
-    navigate("/");
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (err) {
+      console.error("Logout failed", err);
+    } finally {
+      navigate("/");
+    }
   };
 
   return (
@@ -77,7 +76,7 @@ export default function DashboardLayout() {
                     className={clsx(
                       "w-6 h-6 mb-1",
                       isActive
-                        ? "text-[#1D1B20] dark:text-[#E6E1E5]"
+                        ? "text-slate-900 dark:text-white"
                         : "text-outline dark:text-outline-dark",
                     )}
                   />
@@ -93,7 +92,7 @@ export default function DashboardLayout() {
             <img
               src={
                 user?.avatarUrl ||
-                `https://ui-avatars.com/api/?name=${user?.fullName || "User"}&background=random`
+                `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.fullName || "User")}&background=random`
               }
               alt="Profile"
               className="w-full h-full object-cover"
@@ -120,18 +119,21 @@ export default function DashboardLayout() {
             <img
               src={
                 user?.avatarUrl ||
-                `https://ui-avatars.com/api/?name=${user?.fullName || "User"}&background=random`
+                `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.fullName || "User")}&background=random`
               }
               alt="Profile"
               className="w-full h-full object-cover"
             />
           </div>
-          <span className="font-medium text-[#1D1B20] dark:text-[#E6E1E5] text-lg tracking-tight">
+          <span className="font-medium text-slate-900 dark:text-white text-lg tracking-tight">
             Dearly
           </span>
         </div>
         <button
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          aria-label={
+            isMobileMenuOpen ? "Close mobile menu" : "Open mobile menu"
+          }
           className="p-2 -mr-2 text-secondary dark:text-secondary-dark"
         >
           <Menu className="w-6 h-6" />
@@ -155,9 +157,9 @@ export default function DashboardLayout() {
               <h3 className="mb-6 font-medium text-center">Menu</h3>
               <div className="flex flex-col gap-2">
                 <button
-                  onClick={() => {
+                  onClick={async () => {
+                    await handleLogout();
                     setIsMobileMenuOpen(false);
-                    handleLogout();
                   }}
                   className="btn-text w-full flex items-center justify-center gap-2 text-error dark:text-error-dark"
                 >
@@ -204,7 +206,7 @@ export default function DashboardLayout() {
                     className={clsx(
                       "w-12 h-8 rounded-m3-full flex items-center justify-center transition-colors",
                       isActive
-                        ? "bg-primary-container dark:bg-primary-container-dark text-[#1D1B20] dark:text-[#E6E1E5]"
+                        ? "bg-primary-container dark:bg-primary-container-dark text-slate-900 dark:text-white"
                         : "text-secondary dark:text-secondary-dark",
                     )}
                   >
@@ -214,7 +216,7 @@ export default function DashboardLayout() {
                     className={clsx(
                       "text-[10px] font-medium mt-1 transition-colors",
                       isActive
-                        ? "text-[#1D1B20] dark:text-[#E6E1E5]"
+                        ? "text-slate-900 dark:text-white"
                         : "text-secondary dark:text-secondary-dark",
                     )}
                   >

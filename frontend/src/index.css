@@ -1,42 +1,51 @@
 @import "tailwindcss";
 
 /* ───────────────────────────────────────────────
-   Material You (M3) Design Tokens via @theme
+   Dearly — Warm Neutral + Amber Design Tokens
+   Inspired by stitch reference designs
    ─────────────────────────────────────────────── */
 @theme {
-  /* Colors */
-  --color-surface: #FEFBFF;
-  --color-surface-dark: #1C1B1F;
-  --color-surface-container: #F3EDF7;
-  --color-surface-container-dark: #4A4458;
+  /* ── Surfaces ── */
+  --color-surface: #f8f7f6;
+  --color-surface-dark: #121212;
+  --color-surface-container: #f0eeec;
+  --color-surface-container-dark: #1e1e1e;
+  --color-surface-variant: #e7e4e1;
+  --color-surface-variant-dark: #2c2c2c;
 
-  --color-primary: #6750A4;
-  --color-primary-dark: #D0BCFF;
-  --color-primary-container: #EADDFF;
-  --color-primary-container-dark: #4F378B;
+  /* ── Primary (Warm Amber) ── */
+  --color-primary: #ec7813;
+  --color-primary-dark: #f5a623;
+  --color-primary-container: #fde8cc;
+  --color-primary-container-dark: #5c3c14;
 
-  --color-secondary: #625B71;
-  --color-secondary-dark: #CCC2DC;
-  --color-secondary-container: #E8DEF8;
+  /* ── Secondary (Slate / Neutral) ── */
+  --color-secondary: #64748b;
+  --color-secondary-dark: #94a3b8;
+  --color-secondary-container: #e2e8f0;
 
-  --color-tertiary: #7D5260;
-  --color-tertiary-dark: #EFB8C8;
+  /* ── Tertiary (Warm Rose for subtle accents) ── */
+  --color-tertiary: #b45a3c;
+  --color-tertiary-dark: #e09e7e;
 
-  --color-error: #B3261E;
-  --color-error-dark: #F2B8B5;
+  /* ── Error ── */
+  --color-error: #dc2626;
+  --color-error-dark: #f87171;
 
-  --color-outline: #79747E;
-  --color-outline-dark: #938F99;
+  /* ── Outline ── */
+  --color-outline: #94a3b8;
+  --color-outline-dark: #475569;
 
-  /* Typography */
-  --font-sans: 'Roboto', system-ui, sans-serif;
+  /* ── Typography ── */
+  --font-display: 'Manrope', system-ui, sans-serif;
+  --font-sans: 'Manrope', system-ui, sans-serif;
 
-  /* Shadows (Material 3 Elevations) */
+  /* ── Shadows (Material 3 Elevations) ── */
   --shadow-elevation1: 0px 1px 3px 1px rgba(0, 0, 0, 0.15), 0px 1px 2px 0px rgba(0, 0, 0, 0.30);
   --shadow-elevation2: 0px 2px 6px 2px rgba(0, 0, 0, 0.15), 0px 1px 2px 0px rgba(0, 0, 0, 0.30);
   --shadow-elevation3: 0px 1px 3px 0px rgba(0, 0, 0, 0.30), 0px 4px 8px 3px rgba(0, 0, 0, 0.15);
 
-  /* Border Radius (Material 3) */
+  /* ── Border Radius (Material 3) ── */
   --radius-m3-sm: 8px;
   --radius-m3-md: 12px;
   --radius-m3-lg: 16px;
@@ -49,30 +58,38 @@
    ─────────────────────────────────────────────── */
 @layer base {
   body {
-    @apply bg-surface text-surface-dark antialiased transition-colors duration-200 font-sans;
+    @apply bg-surface text-slate-900 antialiased transition-colors duration-200 font-sans;
   }
 
   @media (prefers-color-scheme: dark) {
     body {
-      @apply bg-surface-dark text-surface-container;
+      @apply bg-surface-dark text-slate-100;
     }
   }
 
+  .dark body {
+    @apply bg-surface-dark text-slate-100;
+  }
+
   /* Material 3 Typography Scale */
-  h1 { @apply text-4xl md:text-5xl font-normal tracking-tight; }
-  h2 { @apply text-3xl md:text-4xl font-normal; }
-  h3 { @apply text-2xl md:text-3xl font-normal; }
-  h4 { @apply text-xl md:text-2xl font-normal; }
-  p  { @apply text-base font-normal tracking-wide; }
+  h1 { @apply text-4xl md:text-5xl font-bold tracking-tighter; }
+  h2 { @apply text-3xl md:text-4xl font-bold tracking-tight; }
+  h3 { @apply text-2xl md:text-3xl font-semibold; }
+  h4 { @apply text-xl md:text-2xl font-semibold; }
+  p  { @apply text-base font-normal leading-relaxed; }
 
   input, textarea {
-    @apply bg-surface-container text-surface-dark border-none rounded-m3-md px-4 py-3 focus:ring-2 focus:ring-primary focus:outline-none transition-shadow;
+    @apply bg-surface-container text-slate-900 border-none rounded-m3-md px-4 py-3 focus:ring-2 focus:ring-primary focus:outline-none transition-shadow;
   }
 
   @media (prefers-color-scheme: dark) {
     input, textarea {
-      @apply bg-surface-container-dark text-white focus:ring-primary-dark;
+      @apply bg-surface-variant-dark text-white focus:ring-primary-dark;
     }
+  }
+
+  .dark input, .dark textarea {
+    @apply bg-surface-variant-dark text-white focus:ring-primary-dark;
   }
 }
 
@@ -81,36 +98,47 @@
    ─────────────────────────────────────────────── */
 @layer components {
   .btn-filled {
-    @apply bg-primary text-white rounded-m3-full px-6 py-2.5 font-medium hover:shadow-elevation1 transition-all active:scale-95 cursor-pointer;
+    @apply bg-primary text-white rounded-m3-full px-6 py-2.5 font-bold hover:brightness-110 shadow-elevation1 transition-all active:scale-95 cursor-pointer;
   }
   .btn-tonal {
-    @apply bg-primary-container text-surface-dark rounded-m3-full px-6 py-2.5 font-medium transition-all active:scale-95 cursor-pointer;
+    @apply bg-primary/10 text-primary rounded-m3-full px-6 py-2.5 font-bold hover:bg-primary/20 transition-all active:scale-95 cursor-pointer;
   }
   .btn-outlined {
-    @apply border border-outline text-primary rounded-m3-full px-6 py-2.5 font-medium hover:bg-surface-container transition-all active:scale-95 cursor-pointer;
+    @apply border border-outline text-primary rounded-m3-full px-6 py-2.5 font-medium hover:border-primary hover:bg-primary/5 transition-all active:scale-95 cursor-pointer;
   }
   .btn-text {
-    @apply text-primary rounded-m3-full px-6 py-2.5 font-medium hover:bg-surface-container transition-all active:scale-95 cursor-pointer;
+    @apply text-primary rounded-m3-full px-6 py-2.5 font-medium hover:bg-primary/5 transition-all active:scale-95 cursor-pointer;
   }
 
   .card-elevated {
-    @apply bg-surface rounded-m3-lg shadow-elevation1 p-4;
+    @apply bg-white rounded-m3-lg shadow-elevation1 p-4 border border-slate-200;
   }
   .card-filled {
     @apply bg-surface-container rounded-m3-lg p-4;
   }
   .card-outlined {
-    @apply border border-outline rounded-m3-lg p-4 bg-transparent;
+    @apply border border-slate-200 rounded-m3-lg p-4 bg-transparent;
   }
 
-  /* Dark mode overrides */
+  /* Dark mode overrides (system) */
   @media (prefers-color-scheme: dark) {
-    .btn-filled  { @apply bg-primary-dark text-surface-dark; }
-    .btn-tonal   { @apply bg-primary-container-dark text-white; }
-    .btn-outlined{ @apply border-outline-dark text-primary-dark hover:bg-surface-container-dark; }
-    .btn-text    { @apply text-primary-dark hover:bg-surface-container-dark; }
+    .btn-filled  { @apply bg-primary text-white; }
+    .btn-tonal   { @apply bg-primary/20 text-primary-dark; }
+    .btn-outlined{ @apply border-outline-dark text-primary-dark hover:border-primary-dark hover:bg-primary/10; }
+    .btn-text    { @apply text-primary-dark hover:bg-primary/10; }
 
-    .card-elevated { @apply bg-surface-container-dark; }
+    .card-elevated { @apply bg-surface-container-dark border-slate-800; }
     .card-filled   { @apply bg-surface-container-dark; }
+    .card-outlined { @apply border-slate-800; }
   }
+
+  /* Dark mode overrides (manual class) */
+  .dark .btn-filled  { @apply bg-primary text-white; }
+  .dark .btn-tonal   { @apply bg-primary/20 text-primary-dark; }
+  .dark .btn-outlined{ @apply border-outline-dark text-primary-dark hover:border-primary-dark hover:bg-primary/10; }
+  .dark .btn-text    { @apply text-primary-dark hover:bg-primary/10; }
+
+  .dark .card-elevated { @apply bg-surface-container-dark border-slate-800; }
+  .dark .card-filled   { @apply bg-surface-container-dark; }
+  .dark .card-outlined { @apply border-slate-800; }
 }
