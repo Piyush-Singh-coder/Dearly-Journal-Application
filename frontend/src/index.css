@@ -1,0 +1,116 @@
+@import "tailwindcss";
+
+/* ───────────────────────────────────────────────
+   Material You (M3) Design Tokens via @theme
+   ─────────────────────────────────────────────── */
+@theme {
+  /* Colors */
+  --color-surface: #FEFBFF;
+  --color-surface-dark: #1C1B1F;
+  --color-surface-container: #F3EDF7;
+  --color-surface-container-dark: #4A4458;
+
+  --color-primary: #6750A4;
+  --color-primary-dark: #D0BCFF;
+  --color-primary-container: #EADDFF;
+  --color-primary-container-dark: #4F378B;
+
+  --color-secondary: #625B71;
+  --color-secondary-dark: #CCC2DC;
+  --color-secondary-container: #E8DEF8;
+
+  --color-tertiary: #7D5260;
+  --color-tertiary-dark: #EFB8C8;
+
+  --color-error: #B3261E;
+  --color-error-dark: #F2B8B5;
+
+  --color-outline: #79747E;
+  --color-outline-dark: #938F99;
+
+  /* Typography */
+  --font-sans: 'Roboto', system-ui, sans-serif;
+
+  /* Shadows (Material 3 Elevations) */
+  --shadow-elevation1: 0px 1px 3px 1px rgba(0, 0, 0, 0.15), 0px 1px 2px 0px rgba(0, 0, 0, 0.30);
+  --shadow-elevation2: 0px 2px 6px 2px rgba(0, 0, 0, 0.15), 0px 1px 2px 0px rgba(0, 0, 0, 0.30);
+  --shadow-elevation3: 0px 1px 3px 0px rgba(0, 0, 0, 0.30), 0px 4px 8px 3px rgba(0, 0, 0, 0.15);
+
+  /* Border Radius (Material 3) */
+  --radius-m3-sm: 8px;
+  --radius-m3-md: 12px;
+  --radius-m3-lg: 16px;
+  --radius-m3-xl: 28px;
+  --radius-m3-full: 9999px;
+}
+
+/* ───────────────────────────────────────────────
+   Base Layer
+   ─────────────────────────────────────────────── */
+@layer base {
+  body {
+    @apply bg-surface text-surface-dark antialiased transition-colors duration-200 font-sans;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    body {
+      @apply bg-surface-dark text-surface-container;
+    }
+  }
+
+  /* Material 3 Typography Scale */
+  h1 { @apply text-4xl md:text-5xl font-normal tracking-tight; }
+  h2 { @apply text-3xl md:text-4xl font-normal; }
+  h3 { @apply text-2xl md:text-3xl font-normal; }
+  h4 { @apply text-xl md:text-2xl font-normal; }
+  p  { @apply text-base font-normal tracking-wide; }
+
+  input, textarea {
+    @apply bg-surface-container text-surface-dark border-none rounded-m3-md px-4 py-3 focus:ring-2 focus:ring-primary focus:outline-none transition-shadow;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    input, textarea {
+      @apply bg-surface-container-dark text-white focus:ring-primary-dark;
+    }
+  }
+}
+
+/* ───────────────────────────────────────────────
+   Component Layer — M3 Buttons & Cards
+   ─────────────────────────────────────────────── */
+@layer components {
+  .btn-filled {
+    @apply bg-primary text-white rounded-m3-full px-6 py-2.5 font-medium hover:shadow-elevation1 transition-all active:scale-95 cursor-pointer;
+  }
+  .btn-tonal {
+    @apply bg-primary-container text-surface-dark rounded-m3-full px-6 py-2.5 font-medium transition-all active:scale-95 cursor-pointer;
+  }
+  .btn-outlined {
+    @apply border border-outline text-primary rounded-m3-full px-6 py-2.5 font-medium hover:bg-surface-container transition-all active:scale-95 cursor-pointer;
+  }
+  .btn-text {
+    @apply text-primary rounded-m3-full px-6 py-2.5 font-medium hover:bg-surface-container transition-all active:scale-95 cursor-pointer;
+  }
+
+  .card-elevated {
+    @apply bg-surface rounded-m3-lg shadow-elevation1 p-4;
+  }
+  .card-filled {
+    @apply bg-surface-container rounded-m3-lg p-4;
+  }
+  .card-outlined {
+    @apply border border-outline rounded-m3-lg p-4 bg-transparent;
+  }
+
+  /* Dark mode overrides */
+  @media (prefers-color-scheme: dark) {
+    .btn-filled  { @apply bg-primary-dark text-surface-dark; }
+    .btn-tonal   { @apply bg-primary-container-dark text-white; }
+    .btn-outlined{ @apply border-outline-dark text-primary-dark hover:bg-surface-container-dark; }
+    .btn-text    { @apply text-primary-dark hover:bg-surface-container-dark; }
+
+    .card-elevated { @apply bg-surface-container-dark; }
+    .card-filled   { @apply bg-surface-container-dark; }
+  }
+}
