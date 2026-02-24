@@ -66,8 +66,8 @@ export const useAuthStore = create((set) => ({
   logout: async () => {
     try {
       await axiosInstance.post("/auth/logout");
-    } catch (_) {
-      // Even if the server call fails, still clear local state
+    } catch (error) {
+      console.log(error.response.data.message);
     }
     localStorage.removeItem("token");
     set({ user: null, isAuthenticated: false, token: null });
@@ -101,6 +101,7 @@ export const useAuthStore = create((set) => ({
         isLoading: false,
         error: null,
       });
+      console.log(error.response.data.message);
     }
   },
 

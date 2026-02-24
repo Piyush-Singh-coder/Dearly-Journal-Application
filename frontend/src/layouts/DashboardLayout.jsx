@@ -12,7 +12,7 @@ import {
   Menu,
 } from "lucide-react";
 import clsx from "clsx";
-import { motion, AnimatePresence } from "framer-motion";
+import {  AnimatePresence, motion } from "framer-motion";
 
 const NAV_ITEMS = [{ name: "Home", path: "/dashboard", icon: Home, end: true }];
 

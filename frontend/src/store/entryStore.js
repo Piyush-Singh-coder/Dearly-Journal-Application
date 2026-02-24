@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { axiosInstance } from "./authStore";
 
-export const useEntryStore = create((set, get) => ({
+export const useEntryStore = create((set,) => ({
   entries: [],
   currentEntry: null,
   pagination: null,
