@@ -1,6 +1,7 @@
 import "dotenv/config"; // Must be first — loads .env into process.env
 import express from "express";
 import http from "http";
+import cors from "cors";
 import { setupSocket } from "./lib/socket.js";
 import authRoute from "./routes/authRoute.js";
 import entryRoute from "./routes/entryRoute.js";
@@ -9,6 +10,14 @@ import communityRoute from "./routes/communityRoute.js";
 
 const app = express();
 const server = http.createServer(app);
+
+//Cors
+app.use(
+  cors({
+    origin: process.env.CLIENT_URL || "http://localhost:5173",
+    credentials: true,
+  }),
+);
 
 // Initialize WebSockets
 setupSocket(server);
