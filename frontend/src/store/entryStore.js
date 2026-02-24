@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { axiosInstance } from "./authStore";
 
-export const useEntryStore = create((set,) => ({
+export const useEntryStore = create((set) => ({
   entries: [],
   currentEntry: null,
   pagination: null,
@@ -71,6 +71,9 @@ export const useEntryStore = create((set,) => ({
       const res = await axiosInstance.post("/entries", data);
       set((state) => ({
         entries: [res.data.entry, ...state.entries],
+        pagination: state.pagination
+          ? { ...state.pagination, total: state.pagination.total + 1 }
+          : null,
       }));
       return res.data.entry;
     } catch (error) {
@@ -96,10 +99,12 @@ export const useEntryStore = create((set,) => ({
       const res = await axiosInstance.put(`/entries/${id}`, data);
       set((state) => ({
         entries: state.entries.map((entry) =>
-          entry.id === id ? res.data.entry : entry,
+          String(entry.id) === String(id) ? res.data.entry : entry,
         ),
         currentEntry:
-          state.currentEntry?.id === id ? res.data.entry : state.currentEntry,
+          state.currentEntry && String(state.currentEntry.id) === String(id)
+            ? res.data.entry
+            : state.currentEntry,
       }));
       return res.data.entry;
     } catch (error) {
@@ -124,8 +129,19 @@ export const useEntryStore = create((set,) => ({
     try {
       await axiosInstance.delete(`/entries/${id}`);
       set((state) => ({
-        entries: state.entries.filter((entry) => entry.id !== id),
-        currentEntry: state.currentEntry?.id === id ? null : state.currentEntry,
+        entries: state.entries.filter(
+          (entry) => String(entry.id) !== String(id),
+        ),
+        currentEntry:
+          state.currentEntry && String(state.currentEntry.id) === String(id)
+            ? null
+            : state.currentEntry,
+        pagination: state.pagination
+          ? {
+              ...state.pagination,
+              total: Math.max(0, state.pagination.total - 1),
+            }
+          : null,
       }));
     } catch (error) {
       set({
