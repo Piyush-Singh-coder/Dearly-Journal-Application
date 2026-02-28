@@ -23,6 +23,22 @@ export default function LandingPage() {
   const { isAuthenticated } = useAuthStore();
   const navigate = useNavigate();
 
+  // Opportunistic background ping to wake up free-tier Render backend
+  React.useEffect(() => {
+    const wakeupBackend = async () => {
+      try {
+        const apiUrl = import.meta.env.VITE_API_URL;
+        if (apiUrl) {
+          // Fire and forget health check
+          fetch(`${apiUrl}/health`).catch(() => {});
+        }
+      } catch (err) {
+        // Silently ignore ping errors
+      }
+    };
+    wakeupBackend();
+  }, []);
+
   const handleCTA = () => {
     if (isAuthenticated) {
       navigate("/dashboard");
