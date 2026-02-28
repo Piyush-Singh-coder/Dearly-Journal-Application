@@ -15,7 +15,7 @@ export const sendVerificationEmail = async (toEmail, token) => {
     },
   });
 
-  const verifyUrl = `${process.env.CLIENT_URL}/verify-email?token=${token}`;
+  const verifyUrl = `${process.env.CLIENT_URL}/auth/verify-email?token=${token}`;
 
   await transporter.sendMail({
     from: `"Dearly" <${process.env.SMTP_USER}>`,

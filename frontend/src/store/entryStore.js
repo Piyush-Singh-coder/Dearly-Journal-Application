@@ -120,6 +120,34 @@ export const useEntryStore = create((set) => ({
     }
   },
 
+  duplicateEntry: async (id) => {
+    set((state) => ({
+      loadingCount: state.loadingCount + 1,
+      isLoading: true,
+      error: null,
+    }));
+    try {
+      const res = await axiosInstance.post(`/entries/${id}/duplicate`);
+      set((state) => ({
+        entries: [res.data.entry, ...state.entries],
+        pagination: state.pagination
+          ? { ...state.pagination, total: state.pagination.total + 1 }
+          : null,
+      }));
+      return res.data.entry;
+    } catch (error) {
+      set({
+        error: error.response?.data?.message || "Error duplicating entry",
+      });
+      throw error;
+    } finally {
+      set((state) => {
+        const count = Math.max(0, state.loadingCount - 1);
+        return { loadingCount: count, isLoading: count > 0 };
+      });
+    }
+  },
+
   deleteEntry: async (id) => {
     set((state) => ({
       loadingCount: state.loadingCount + 1,
@@ -153,6 +181,91 @@ export const useEntryStore = create((set) => ({
         const count = Math.max(0, state.loadingCount - 1);
         return { loadingCount: count, isLoading: count > 0 };
       });
+    }
+  },
+
+  // ─────────── Attachments ───────────
+
+  addAttachment: async (entryId, { url, fileType }) => {
+    try {
+      const res = await axiosInstance.post(`/entries/${entryId}/attachments`, {
+        url,
+        fileType,
+      });
+      return res.data.attachment;
+    } catch (error) {
+      console.error("Add attachment error:", error);
+      throw error;
+    }
+  },
+
+  getAttachments: async (entryId) => {
+    try {
+      const res = await axiosInstance.get(`/entries/${entryId}/attachments`);
+      return res.data.attachments;
+    } catch (error) {
+      console.error("Get attachments error:", error);
+      throw error;
+    }
+  },
+
+  deleteAttachment: async (entryId, attachmentId) => {
+    try {
+      await axiosInstance.delete(
+        `/entries/${entryId}/attachments/${attachmentId}`,
+      );
+    } catch (error) {
+      console.error("Delete attachment error:", error);
+      throw error;
+    }
+  },
+
+  // ─────────── Share Link ───────────
+
+  generateShareLink: async (entryId) => {
+    try {
+      const res = await axiosInstance.put(`/entries/${entryId}`, {
+        shareMode: "link",
+      });
+      const entry = res.data.entry;
+      // Update local entries list
+      set((state) => ({
+        entries: state.entries.map((e) =>
+          String(e.id) === String(entryId) ? entry : e,
+        ),
+        currentEntry:
+          state.currentEntry &&
+          String(state.currentEntry.id) === String(entryId)
+            ? entry
+            : state.currentEntry,
+      }));
+      return entry;
+    } catch (error) {
+      console.error("Generate share link error:", error);
+      throw error;
+    }
+  },
+
+  revokeShareLink: async (entryId) => {
+    try {
+      const res = await axiosInstance.put(`/entries/${entryId}`, {
+        shareMode: "private",
+      });
+      const entry = res.data.entry;
+      set((state) => ({
+        entries: state.entries.map((e) =>
+          String(e.id) === String(entryId) ? entry : e,
+        ),
+        currentEntry:
+          state.currentEntry &&
+          String(state.currentEntry.id) === String(entryId)
+            ? entry
+            : state.currentEntry,
+      }));
+      return entry;
+    } catch (error) {
+      console.error("Revoke share link error:", error);
+      throw error;
     }
   },
 }));

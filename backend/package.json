@@ -12,14 +12,19 @@
   "type": "module",
   "description": "",
   "dependencies": {
+    "@hocuspocus/extension-logger": "^3.4.4",
+    "@hocuspocus/server": "^3.4.4",
+    "@hocuspocus/transformer": "^3.4.4",
     "@prisma/client": "^6.19.2",
     "@supabase/supabase-js": "^2.97.0",
     "bcryptjs": "^3.0.3",
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.3",
+    "multer": "^2.1.0",
     "nodemailer": "^8.0.1",
-    "socket.io": "^4.8.3"
+    "socket.io": "^4.8.3",
+    "yjs": "^13.6.29"
   },
   "devDependencies": {
     "nodemon": "^3.1.11"

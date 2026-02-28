@@ -98,9 +98,17 @@ export const verifyEmail = async (req, res) => {
     });
 
     if (!user) {
+      // Token not found — could be already verified or invalid
+      // Check if there's a verified user whose token was already cleared
       return res
         .status(400)
         .json({ message: "Invalid or expired verification token." });
+    }
+
+    if (user.isVerified) {
+      return res
+        .status(200)
+        .json({ message: "Your email is already verified! You can sign in." });
     }
 
     // Mark as verified and clear the token so it can't be reused
@@ -268,6 +276,7 @@ export const profile = async (req, res) => {
       select: {
         id: true,
         email: true,
+        fullName: true,
         avatarUrl: true,
         isVerified: true,
         googleId: true,
@@ -286,6 +295,140 @@ export const profile = async (req, res) => {
     return res.status(200).json({ user });
   } catch (error) {
     console.error("Profile error:", error);
+    return res.status(500).json({ message: "Internal server error." });
+  }
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PUT /api/auth/profile
+// ─────────────────────────────────────────────────────────────────────────────
+export const updateProfile = async (req, res) => {
+  const { fullName, avatarUrl } = req.body;
+
+  try {
+    const user = await prisma.user.update({
+      where: { id: req.user.id },
+      data: {
+        ...(fullName !== undefined && { fullName }),
+        ...(avatarUrl !== undefined && { avatarUrl }),
+      },
+      select: {
+        id: true,
+        email: true,
+        fullName: true,
+        avatarUrl: true,
+        isVerified: true,
+        googleId: true,
+        createdAt: true,
+        updatedAt: true,
+        settings: true,
+      },
+    });
+
+    return res
+      .status(200)
+      .json({ user, message: "Profile updated successfully." });
+  } catch (error) {
+    console.error("Update profile error:", error);
+    return res.status(500).json({ message: "Internal server error." });
+  }
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PUT /api/auth/settings
+// ─────────────────────────────────────────────────────────────────────────────
+export const updateSettings = async (req, res) => {
+  const { theme, dailyReminder } = req.body;
+
+  try {
+    const settings = await prisma.userSettings.upsert({
+      where: { userId: req.user.id },
+      update: {
+        ...(theme !== undefined && { theme }),
+        ...(dailyReminder !== undefined && { dailyReminder }),
+      },
+      create: {
+        userId: req.user.id,
+        theme: theme || "light",
+        dailyReminder: dailyReminder || null,
+      },
+    });
+
+    return res
+      .status(200)
+      .json({ settings, message: "Settings updated successfully." });
+  } catch (error) {
+    console.error("Update settings error:", error);
+    return res.status(500).json({ message: "Internal server error." });
+  }
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PUT /api/auth/change-password
+// ─────────────────────────────────────────────────────────────────────────────
+export const changePassword = async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+
+  if (!currentPassword || !newPassword) {
+    return res
+      .status(400)
+      .json({ message: "Current password and new password are required." });
+  }
+
+  if (newPassword.length < 8) {
+    return res
+      .status(400)
+      .json({ message: "New password must be at least 8 characters." });
+  }
+
+  try {
+    const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+
+    // Check if user has a password (might be a Google-only account)
+    if (!user.passwordHash) {
+      return res
+        .status(400)
+        .json({
+          message:
+            "This account uses Google Sign-In and does not have a password.",
+        });
+    }
+
+    const isPasswordValid = await bcrypt.compare(
+      currentPassword,
+      user.passwordHash,
+    );
+    if (!isPasswordValid) {
+      return res.status(401).json({ message: "Incorrect current password." });
+    }
+
+    const salt = await bcrypt.genSalt(12);
+    const passwordHash = await bcrypt.hash(newPassword, salt);
+
+    await prisma.user.update({
+      where: { id: req.user.id },
+      data: { passwordHash },
+    });
+
+    return res.status(200).json({ message: "Password updated successfully." });
+  } catch (error) {
+    console.error("Change password error:", error);
+    return res.status(500).json({ message: "Internal server error." });
+  }
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DELETE /api/auth/account
+// ─────────────────────────────────────────────────────────────────────────────
+export const deleteAccount = async (req, res) => {
+  try {
+    await prisma.user.delete({
+      where: { id: req.user.id },
+    });
+
+    return res.status(200).json({ message: "Account deleted successfully." });
+  } catch (error) {
+    console.error("Delete account error:", error);
     return res.status(500).json({ message: "Internal server error." });
   }
 };

@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { axiosInstance } from "./authStore";
+import toast from "react-hot-toast";
 
 export const useCommunityStore = create((set, get) => ({
   feed: [],
@@ -9,10 +10,12 @@ export const useCommunityStore = create((set, get) => ({
   isLoading: false,
   error: null,
 
-  fetchFeed: async (page = 1) => {
+  fetchFeed: async (page = 1, sort = "latest") => {
     set({ isLoading: true, error: null });
     try {
-      const res = await axiosInstance.get(`/community/feed?page=${page}`);
+      const res = await axiosInstance.get(
+        `/community/feed?page=${page}&sort=${sort}`,
+      );
       set({
         feed: res.data.posts,
         feedPagination: res.data.pagination,
@@ -27,32 +30,80 @@ export const useCommunityStore = create((set, get) => ({
   },
 
   handleReaction: async (entryId, type) => {
-    set({ isLoading: true, error: null });
+    // Optimistic Update
+    set((state) => ({
+      feed: state.feed.map((post) => {
+        if (post.entry.id === entryId) {
+          const prevReaction = post.entry.userReactionType;
+          let newSupportCount = post.entry.reactionCounts.support;
+          let newRelateCount = post.entry.reactionCounts.relate;
+
+          // Remove old reaction if switching
+          if (prevReaction === "support") newSupportCount--;
+          if (prevReaction === "relate") newRelateCount--;
+
+          // Add new reaction
+          if (type === "support") newSupportCount++;
+          if (type === "relate") newRelateCount++;
+
+          return {
+            ...post,
+            entry: {
+              ...post.entry,
+              userReactionType: type,
+              reactionCounts: {
+                support: newSupportCount,
+                relate: newRelateCount,
+                total: newSupportCount + newRelateCount,
+              },
+            },
+          };
+        }
+        return post;
+      }),
+    }));
+
     try {
       await axiosInstance.post(`/community/reaction/${entryId}`, { type });
-      await get().fetchFeed(get().feedPagination?.currentPage || 1);
-      set({ isLoading: false });
     } catch (error) {
-      set({
-        error: error.response?.data?.message || "Error posting reaction",
-        isLoading: false,
-      });
-      throw error;
+      // Could rollback on failure here if needed
+      toast.error(error.response?.data?.message || "Failed to post reaction");
     }
   },
 
   removeReaction: async (entryId) => {
-    set({ isLoading: true, error: null });
+    // Optimistic Update
+    set((state) => ({
+      feed: state.feed.map((post) => {
+        if (post.entry.id === entryId) {
+          const prevReaction = post.entry.userReactionType;
+          let newSupportCount = post.entry.reactionCounts.support;
+          let newRelateCount = post.entry.reactionCounts.relate;
+
+          if (prevReaction === "support") newSupportCount--;
+          if (prevReaction === "relate") newRelateCount--;
+
+          return {
+            ...post,
+            entry: {
+              ...post.entry,
+              userReactionType: null,
+              reactionCounts: {
+                support: newSupportCount,
+                relate: newRelateCount,
+                total: newSupportCount + newRelateCount,
+              },
+            },
+          };
+        }
+        return post;
+      }),
+    }));
+
     try {
       await axiosInstance.delete(`/community/reaction/${entryId}`);
-      await get().fetchFeed(get().feedPagination?.currentPage || 1);
-      set({ isLoading: false });
     } catch (error) {
-      set({
-        error: error.response?.data?.message || "Error removing reaction",
-        isLoading: false,
-      });
-      throw error;
+      toast.error(error.response?.data?.message || "Failed to remove reaction");
     }
   },
 

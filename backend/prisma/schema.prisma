@@ -175,6 +175,6 @@ model CommunityPost {
   createdAt   DateTime     @default(now())
   entryId     String       @unique
   entry       JournalEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
-  notebookId  String
-  notebook    Notebook     @relation(fields: [notebookId], references: [id], onDelete: Cascade)
+  notebookId  String?
+  notebook    Notebook?    @relation(fields: [notebookId], references: [id], onDelete: Cascade)
 }

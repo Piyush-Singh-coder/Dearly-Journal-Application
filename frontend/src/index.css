@@ -1,4 +1,6 @@
 @import "tailwindcss";
+@plugin "@tailwindcss/typography";
+@custom-variant dark (&:is(.dark *));
 
 /* ───────────────────────────────────────────────
    Dearly — Warm Neutral + Amber Design Tokens
@@ -61,11 +63,7 @@
     @apply bg-surface text-slate-900 antialiased transition-colors duration-200 font-sans;
   }
 
-  @media (prefers-color-scheme: dark) {
-    body {
-      @apply bg-surface-dark text-slate-100;
-    }
-  }
+
 
   .dark body {
     @apply bg-surface-dark text-slate-100;
@@ -82,11 +80,7 @@
     @apply bg-surface-container text-slate-900 border-none rounded-m3-md px-4 py-3 focus:ring-2 focus:ring-primary focus:outline-none transition-shadow;
   }
 
-  @media (prefers-color-scheme: dark) {
-    input, textarea {
-      @apply bg-surface-variant-dark text-white focus:ring-primary-dark;
-    }
-  }
+
 
   .dark input, .dark textarea {
     @apply bg-surface-variant-dark text-white focus:ring-primary-dark;
@@ -120,17 +114,7 @@
     @apply border border-slate-200 rounded-m3-lg p-4 bg-transparent;
   }
 
-  /* Dark mode overrides (system) */
-  @media (prefers-color-scheme: dark) {
-    .btn-filled  { @apply bg-primary text-white; }
-    .btn-tonal   { @apply bg-primary/20 text-primary-dark; }
-    .btn-outlined{ @apply border-outline-dark text-primary-dark hover:border-primary-dark hover:bg-primary/10; }
-    .btn-text    { @apply text-primary-dark hover:bg-primary/10; }
 
-    .card-elevated { @apply bg-surface-container-dark border-slate-800; }
-    .card-filled   { @apply bg-surface-container-dark; }
-    .card-outlined { @apply border-slate-800; }
-  }
 
   /* Dark mode overrides (manual class) */
   .dark .btn-filled  { @apply bg-primary text-white; }
@@ -141,4 +125,112 @@
   .dark .card-elevated { @apply bg-surface-container-dark border-slate-800; }
   .dark .card-filled   { @apply bg-surface-container-dark; }
   .dark .card-outlined { @apply border-slate-800; }
+}
+
+@utility perspective-1000 {
+  perspective: 1000px;
+}
+@utility transform-style-3d {
+  transform-style: preserve-3d;
+}
+@utility rotate-y-90 {
+  transform: rotateY(90deg);
+}
+@utility -rotate-y-90 {
+  transform: rotateY(-90deg);
+}
+@utility rotate-y-minus-15 {
+  transform: rotateY(-15deg);
+}
+@utility translate-z-px {
+  transform: translateZ(1px);
+}
+@utility backface-hidden {
+  backface-visibility: hidden;
+}
+
+/* Custom Scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.5);
+  border-radius: 10px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(107, 114, 128, 0.8);
+}
+.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(75, 85, 99, 0.5);
+}
+.dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(107, 114, 128, 0.8);
+}
+
+/* ───────────────────────────────────────────────
+   TipTap / ProseMirror Editor — Dark Mode Fixes
+   ─────────────────────────────────────────────── */
+.ProseMirror {
+  color: inherit;
+  line-height: 1.75;
+  min-height: 200px;
+}
+
+.ProseMirror p {
+  margin-bottom: 0.75em;
+  color: inherit;
+}
+
+.ProseMirror h1,
+.ProseMirror h2,
+.ProseMirror h3 {
+  font-weight: 700;
+  margin-bottom: 0.5em;
+  color: inherit;
+}
+
+.ProseMirror ul,
+.ProseMirror ol {
+  padding-left: 1.5rem;
+  margin-bottom: 0.75em;
+  color: inherit;
+}
+
+.ProseMirror blockquote {
+  border-left: 3px solid #ec7813;
+  padding-left: 1rem;
+  color: #64748b;
+  font-style: italic;
+  margin: 0.75em 0;
+}
+
+.dark .ProseMirror blockquote {
+  color: #94a3b8;
+}
+
+.ProseMirror a {
+  color: #ec7813;
+  text-decoration: underline;
+}
+
+/* Placeholder text */
+.ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: #94a3b8;
+  pointer-events: none;
+  height: 0;
+}
+
+.dark .ProseMirror p.is-editor-empty:first-child::before {
+  color: #475569;
+}
+
+/* Selection highlight */
+.ProseMirror ::selection {
+  background: rgba(236, 120, 19, 0.2);
 }

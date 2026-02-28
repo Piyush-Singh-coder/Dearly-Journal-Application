@@ -300,69 +300,116 @@ export const joinByInvite = async (req, res) => {
   const { token } = req.params;
 
   try {
+    // ── Path 1: Per-email invite (Invite table) ──────────────────────────────
     const invite = await prisma.invite.findUnique({
       where: { token },
       include: { notebook: true },
     });
 
-    if (!invite) {
-      return res.status(400).json({ message: "Invalid invite link." });
-    }
-    if (invite.status !== "pending") {
-      return res
-        .status(400)
-        .json({ message: "This invite has already been used or has expired." });
-    }
-    if (new Date() > invite.expiresAt) {
-      await prisma.invite.update({
-        where: { token },
-        data: { status: "expired" },
-      });
-      return res.status(400).json({ message: "This invite link has expired." });
-    }
+    if (invite) {
+      if (invite.status !== "pending") {
+        return res
+          .status(400)
+          .json({
+            message: "This invite has already been used or has expired.",
+          });
+      }
+      if (new Date() > invite.expiresAt) {
+        await prisma.invite.update({
+          where: { token },
+          data: { status: "expired" },
+        });
+        return res
+          .status(400)
+          .json({ message: "This invite link has expired." });
+      }
 
-    // Enforce that only the invited email can accept — prevents invite hijacking
-    if (
-      invite.email &&
-      invite.email.trim().toLowerCase() !== req.user.email.trim().toLowerCase()
-    ) {
-      return res
-        .status(403)
-        .json({
+      // Enforce that only the invited email can accept
+      if (
+        invite.email &&
+        invite.email.trim().toLowerCase() !==
+          req.user.email.trim().toLowerCase()
+      ) {
+        return res.status(403).json({
           message: "This invite was sent to a different email address.",
         });
+      }
+
+      // Check if already a member
+      const existingMember = await prisma.journalMember.findUnique({
+        where: {
+          userId_notebookId: {
+            userId: req.user.id,
+            notebookId: invite.notebookId,
+          },
+        },
+      });
+      if (existingMember) {
+        return res
+          .status(409)
+          .json({ message: "You are already a member of this notebook." });
+      }
+
+      // Add user as editor + mark invite accepted
+      const [, member] = await prisma.$transaction([
+        prisma.invite.update({
+          where: { token },
+          data: { status: "accepted" },
+        }),
+        prisma.journalMember.create({
+          data: {
+            userId: req.user.id,
+            notebookId: invite.notebookId,
+            role: "editor",
+          },
+        }),
+      ]);
+
+      return res.status(200).json({
+        message: `You have joined "${invite.notebook.title}".`,
+        notebook: invite.notebook,
+        role: member.role,
+      });
+    }
+
+    // ── Path 2: Notebook.inviteCode (open invite code) ───────────────────────
+    const notebook = await prisma.notebook.findUnique({
+      where: { inviteCode: token },
+    });
+
+    if (!notebook) {
+      return res.status(400).json({ message: "Invalid invite code." });
+    }
+    if (notebook.type !== "team") {
+      return res.status(400).json({ message: "This is not a team notebook." });
+    }
+
+    // Prevent owner from joining their own notebook
+    if (notebook.userId === req.user.id) {
+      return res
+        .status(400)
+        .json({ message: "You are the owner of this notebook." });
     }
 
     // Check if already a member
-    const existingMember = await prisma.journalMember.findUnique({
+    const existing = await prisma.journalMember.findUnique({
       where: {
-        userId_notebookId: {
-          userId: req.user.id,
-          notebookId: invite.notebookId,
-        },
+        userId_notebookId: { userId: req.user.id, notebookId: notebook.id },
       },
     });
-    if (existingMember) {
+    if (existing) {
       return res
         .status(409)
         .json({ message: "You are already a member of this notebook." });
     }
 
-    // Add user as an editor + mark invite accepted — in one transaction
-    const [, member] = await prisma.$transaction([
-      prisma.invite.update({ where: { token }, data: { status: "accepted" } }),
-      prisma.journalMember.create({
-        data: {
-          userId: req.user.id,
-          notebookId: invite.notebookId,
-          role: "editor",
-        },
-      }),
-    ]);
+    const member = await prisma.journalMember.create({
+      data: { userId: req.user.id, notebookId: notebook.id, role: "editor" },
+    });
 
     return res.status(200).json({
-      message: `You have joined "${invite.notebook.title}".`,
-      notebookId: invite.notebookId,
+      message: `You have joined "${notebook.title}".`,
+      notebook,
       role: member.role,
     });
   } catch (error) {

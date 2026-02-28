@@ -35,7 +35,7 @@ export const shareToCommunity = async (req, res) => {
         create: {
           entryId,
           isAnonymous,
-          notebookId: entry.notebookId, // Required by schema
+          notebookId: entry.notebookId ?? undefined, // Optional – null for standalone entries
         },
       }),
     ]);
@@ -107,19 +107,27 @@ export const unshareFromCommunity = async (req, res) => {
 export const getCommunityFeed = async (req, res) => {
   const page = Math.max(1, parseInt(req.query.page, 10) || 1);
   const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 20));
+  const sort = req.query.sort || "latest"; // "latest" or "trending"
   const skip = (page - 1) * limit;
 
   try {
+    // Determine orderBy based on sort query
+    const orderBy =
+      sort === "trending"
+        ? { entry: { reactions: { _count: "desc" } } }
+        : { createdAt: "desc" };
+
     const [posts, total] = await Promise.all([
       prisma.communityPost.findMany({
-        orderBy: { createdAt: "desc" },
+        orderBy,
         skip,
         take: limit,
         include: {
           entry: {
             include: {
               tags: true,
-              _count: { select: { reactions: true, comments: true } },
+              _count: { select: { comments: true, reactions: true } },
+              reactions: true, // We need this to count specific types and check user reaction
               // Include the user only if it isn't anonymous
               user: {
                 select: { id: true, fullName: true, avatarUrl: true },
@@ -131,10 +139,42 @@ export const getCommunityFeed = async (req, res) => {
       prisma.communityPost.count(),
     ]);
 
-    // Strip user data from frontend response if the post is anonymous
+    // Format posts: group reactions, check user reaction, strip anonymous data
     const cleanedPosts = posts.map((post) => {
-      if (post.isAnonymous && post.entry) {
-        post.entry.user = null; // Hide author details completely
+      const entry = post.entry;
+
+      if (entry) {
+        if (post.isAnonymous) {
+          entry.user = null; // Hide author details completely
+        }
+
+        // Process Reactions
+        let supportCount = 0;
+        let relateCount = 0;
+        let userReactionType = null;
+
+        if (entry.reactions) {
+          entry.reactions.forEach((reaction) => {
+            if (reaction.type === "support") supportCount++;
+            if (reaction.type === "relate") relateCount++;
+
+            // Check if THIS user reacted
+            if (req.user && reaction.userId === req.user.id) {
+              userReactionType = reaction.type;
+            }
+          });
+        }
+
+        // Expose grouped reaction data to frontend
+        entry.reactionCounts = {
+          support: supportCount,
+          relate: relateCount,
+          total: supportCount + relateCount,
+        };
+        entry.userReactionType = userReactionType;
+
+        // Remove raw reactions array to save payload size
+        delete entry.reactions;
       }
       return post;
     });
@@ -162,7 +202,7 @@ export const handleReaction = async (req, res) => {
   const { entryId } = req.params;
   const { type } = req.body;
 
-  const validTypes = ["support", "heart", "thoughtful"];
+  const validTypes = ["support", "relate"];
   if (!validTypes.includes(type)) {
     return res.status(400).json({ message: "Invalid reaction type." });
   }
@@ -252,11 +292,9 @@ export const addComment = async (req, res) => {
       where: { userId_entryId: { userId: user.id, entryId } },
     });
     if (!existingReaction) {
-      return res
-        .status(403)
-        .json({
-          message: "You must react to this entry before you can comment.",
-        });
+      return res.status(403).json({
+        message: "You must react to this entry before you can comment.",
+      });
     }
 
     // Reset daily tokens if a new day has started
@@ -286,11 +324,9 @@ export const addComment = async (req, res) => {
         (now.getTime() - lastComment.createdAt.getTime()) / (1000 * 60);
       if (minutesSinceLast < COOLDOWN_MINUTES) {
         const remainingStr = Math.ceil(COOLDOWN_MINUTES - minutesSinceLast);
-        return res
-          .status(429)
-          .json({
-            message: `Cooldown active. Please wait ${remainingStr} more minutes.`,
-          });
+        return res.status(429).json({
+          message: `Cooldown active. Please wait ${remainingStr} more minutes.`,
+        });
       }
     }
 

@@ -98,6 +98,38 @@ export const createEntry = async (req, res) => {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
+// GET /api/entries/share/:token  (PUBLIC — no auth required)
+// Fetch a single entry by its shareToken — only if shareMode is 'link' or 'community'
+// ─────────────────────────────────────────────────────────────────────────────
+export const getEntryByShareToken = async (req, res) => {
+  const { token } = req.params;
+  try {
+    const entry = await prisma.journalEntry.findUnique({
+      where: { shareToken: token },
+      include: {
+        tags: true,
+        user: { select: { id: true, fullName: true, avatarUrl: true } },
+        notebook: { select: { id: true, title: true } },
+      },
+    });
+
+    if (!entry) {
+      return res.status(404).json({ message: "Entry not found." });
+    }
+
+    // Only link or community entries can be publicly viewed
+    if (entry.shareMode !== "link" && entry.shareMode !== "community") {
+      return res.status(403).json({ message: "This entry is private." });
+    }
+
+    return res.status(200).json({ entry });
+  } catch (error) {
+    console.error("Get entry by share token error:", error);
+    return res.status(500).json({ message: "Internal server error." });
+  }
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
 // GET /api/entries
 // List all entries for the authenticated user
 // Supports: ?notebookId=, ?mood=, ?shareMode=, ?tag=, ?page=, ?limit=
@@ -304,6 +336,28 @@ export const updateEntry = async (req, res) => {
       },
     });
 
+    // ── Keep CommunityPost table in sync ──────────────────────────────────
+    // The community feed reads from `CommunityPost`, not `JournalEntry.shareMode`.
+    // We must upsert/delete the CommunityPost row whenever shareMode changes.
+    if (shareMode !== undefined) {
+      if (shareMode === "community") {
+        // Create community post record if it doesn't exist yet
+        await prisma.communityPost.upsert({
+          where: { entryId: id },
+          update: {}, // already exists — nothing extra to change
+          create: {
+            entryId: id,
+            isAnonymous: updated.isAnonymous ?? false,
+            notebookId: updated.notebookId ?? undefined,
+          },
+        });
+      } else if (existing.shareMode === "community") {
+        // Was community, now being set to something else — remove from feed
+        await prisma.communityPost.deleteMany({ where: { entryId: id } });
+      }
+    }
+    // ─────────────────────────────────────────────────────────────────────
+
     return res
       .status(200)
       .json({ message: "Entry updated successfully.", entry: updated });
@@ -335,6 +389,66 @@ export const deleteEntry = async (req, res) => {
     return res.status(200).json({ message: "Entry deleted successfully." });
   } catch (error) {
     console.error("Delete entry error:", error);
+    return res.status(500).json({ message: "Internal server error." });
+  }
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// POST /api/entries/:id/duplicate
+// Duplicate a journal entry — owner only
+// ─────────────────────────────────────────────────────────────────────────────
+export const duplicateEntry = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const existing = await prisma.journalEntry.findUnique({
+      where: { id },
+      include: {
+        tags: true,
+      },
+    });
+
+    if (!existing) {
+      return res.status(404).json({ message: "Entry not found." });
+    }
+    if (existing.userId !== req.user.id) {
+      return res.status(403).json({ message: "Access denied." });
+    }
+
+    // Build tag connect array
+    const tagOps =
+      existing.tags.length > 0
+        ? {
+            connect: existing.tags.map((tag) => ({ id: tag.id })),
+          }
+        : undefined;
+
+    const newEntry = await prisma.journalEntry.create({
+      data: {
+        title: `Copy of ${existing.title}`,
+        content: existing.content,
+        mood: existing.mood,
+        date: new Date(),
+        shareMode:
+          existing.shareMode === "community" ? "private" : existing.shareMode,
+        shareToken: null, // regenerate if needed
+        isAnonymous: existing.isAnonymous,
+        userId: req.user.id,
+        notebookId: existing.notebookId,
+        tags: tagOps,
+      },
+      include: {
+        tags: true,
+        attachments: true,
+        notebook: { select: { id: true, title: true } },
+      },
+    });
+
+    return res
+      .status(201)
+      .json({ message: "Entry duplicated successfully.", entry: newEntry });
+  } catch (error) {
+    console.error("Duplicate entry error:", error);
     return res.status(500).json({ message: "Internal server error." });
   }
 };

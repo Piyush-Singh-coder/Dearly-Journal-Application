@@ -11,6 +11,7 @@ export default function AuthPage() {
   const modeParam = searchParams.get("mode");
 
   const [isLogin, setIsLogin] = useState(modeParam !== "signup");
+  const [verificationEmail, setVerificationEmail] = useState(null);
 
   useEffect(() => {
     setIsLogin(modeParam !== "signup");
@@ -19,12 +20,14 @@ export default function AuthPage() {
   const toggleMode = () => {
     setSearchParams({ mode: isLogin ? "signup" : "login" });
   };
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
-  const { login, signup, isLoading, isAuthenticated } = useAuthStore();
+  const { login, signup, googleLogin, isAuthenticated } = useAuthStore();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -34,18 +37,21 @@ export default function AuthPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsSubmitting(true);
     try {
       if (isLogin) {
         await login({ email, password });
         toast.success("Welcome back!");
       } else {
         await signup({ email, password, fullName });
-        toast.success("Account created successfully!");
+        setVerificationEmail(email);
       }
     } catch (err) {
       toast.error(
         err.response?.data?.message || err.message || "Authentication failed",
       );
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -82,184 +88,222 @@ export default function AuthPage() {
               </h1>
             </div>
 
-            <AnimatePresence mode="wait">
+            {/* ── Check Your Inbox Screen (shown after signup) ── */}
+            {verificationEmail ? (
               <motion.div
-                key={isLogin ? "login" : "register"}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 20 }}
-                transition={{ duration: 0.3 }}
+                key="check-inbox"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex flex-col items-center text-center"
               >
-                <h2 className="text-2xl md:text-3xl font-extrabold text-slate-900 dark:text-slate-100 mb-2">
-                  {isLogin ? "Welcome back" : "Begin Your Journey"}
+                <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mb-6">
+                  <Mail className="w-10 h-10 text-primary" />
+                </div>
+                <h2 className="text-2xl md:text-3xl font-extrabold text-slate-900 dark:text-slate-100 mb-3">
+                  Check Your Inbox
                 </h2>
-                <p className="text-slate-600 dark:text-slate-400 mb-8 text-sm md:text-base leading-relaxed">
-                  {isLogin
-                    ? "Enter your details to continue your journey."
-                    : "Create an account to start your personal archive and preserve your memories."}
+                <p className="text-slate-600 dark:text-slate-400 mb-2">
+                  We sent a verification link to:
                 </p>
+                <div className="bg-slate-100 dark:bg-black/20 border border-slate-200 dark:border-primary/20 rounded-xl px-4 py-2.5 text-primary font-bold text-sm mb-6 w-full">
+                  {verificationEmail}
+                </div>
+                <p className="text-slate-500 dark:text-slate-400 text-sm mb-8">
+                  Click the link in the email to verify your account. After
+                  that, come back here to sign in.
+                </p>
+                <button
+                  onClick={() => {
+                    setVerificationEmail(null);
+                    setSearchParams({ mode: "login" });
+                  }}
+                  className="w-full bg-primary hover:bg-primary-dark text-white font-bold py-4 rounded-xl shadow-lg transition-all active:scale-[0.98]"
+                >
+                  Go to Sign In
+                </button>
+                <p className="text-xs text-slate-400 dark:text-slate-500 mt-4">
+                  Didn't receive the email? Check your spam folder.
+                </p>
+              </motion.div>
+            ) : (
+              /* ── Login / Register Form ── */
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={isLogin ? "login" : "register"}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 20 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <h2 className="text-2xl md:text-3xl font-extrabold text-slate-900 dark:text-slate-100 mb-2">
+                    {isLogin ? "Welcome back" : "Begin Your Journey"}
+                  </h2>
+                  <p className="text-slate-600 dark:text-slate-400 mb-8 text-sm md:text-base leading-relaxed">
+                    {isLogin
+                      ? "Enter your details to continue your journey."
+                      : "Create an account to start your personal archive and preserve your memories."}
+                  </p>
 
-                <form onSubmit={handleSubmit} className="space-y-5">
-                  <AnimatePresence>
-                    {!isLogin && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: "auto" }}
-                        exit={{ opacity: 0, height: 0 }}
-                        transition={{ duration: 0.2 }}
-                        className="space-y-1.5 overflow-hidden"
-                      >
-                        <label
-                          htmlFor="fullName"
-                          className="text-sm font-medium text-slate-700 dark:text-slate-300 ml-1"
+                  <form onSubmit={handleSubmit} className="space-y-5">
+                    <AnimatePresence>
+                      {!isLogin && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: "auto" }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.2 }}
+                          className="space-y-1.5 overflow-hidden"
                         >
-                          Full Name
-                        </label>
-                        <div className="relative">
-                          <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
-                          <input
-                            id="fullName"
-                            type="text"
-                            required={!isLogin}
-                            value={fullName}
-                            onChange={(e) => setFullName(e.target.value)}
-                            placeholder="John Doe"
-                            className="w-full bg-slate-50 dark:bg-black/20 border border-slate-200 dark:border-primary/20 text-slate-900 dark:text-slate-100 pl-12 pr-4 py-4 rounded-xl focus:ring-1 focus:ring-primary focus:border-primary outline-none transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500"
-                          />
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-
-                  <div className="space-y-1.5">
-                    <label
-                      htmlFor="email"
-                      className="text-sm font-medium text-slate-700 dark:text-slate-300 ml-1"
-                    >
-                      Email Address
-                    </label>
-                    <div className="relative">
-                      <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
-                      <input
-                        id="email"
-                        type="email"
-                        required
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        placeholder="name@example.com"
-                        className="w-full bg-slate-50 dark:bg-black/20 border border-slate-200 dark:border-primary/20 text-slate-900 dark:text-slate-100 pl-12 pr-4 py-4 rounded-xl focus:ring-1 focus:ring-primary focus:border-primary outline-none transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <div className="flex justify-between items-center px-1">
-                      <label
-                        htmlFor="password"
-                        className="text-sm font-medium text-slate-700 dark:text-slate-300"
-                      >
-                        Password
-                      </label>
-                      {isLogin && (
-                        <a
-                          href="#"
-                          className="text-xs font-semibold text-primary hover:underline"
-                        >
-                          Forgot Password?
-                        </a>
+                          <label
+                            htmlFor="fullName"
+                            className="text-sm font-medium text-slate-700 dark:text-slate-300 ml-1"
+                          >
+                            Full Name
+                          </label>
+                          <div className="relative">
+                            <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
+                            <input
+                              id="fullName"
+                              type="text"
+                              required={!isLogin}
+                              value={fullName}
+                              onChange={(e) => setFullName(e.target.value)}
+                              placeholder="John Doe"
+                              className="w-full bg-slate-50 dark:bg-black/20 border border-slate-200 dark:border-primary/20 text-slate-900 dark:text-slate-100 pl-12 pr-4 py-4 rounded-xl focus:ring-1 focus:ring-primary focus:border-primary outline-none transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500"
+                            />
+                          </div>
+                        </motion.div>
                       )}
-                    </div>
-                    <div className="relative">
-                      <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
-                      <input
-                        id="password"
-                        type={showPassword ? "text" : "password"}
-                        required
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        placeholder="••••••••"
-                        className="w-full bg-slate-50 dark:bg-black/20 border border-slate-200 dark:border-primary/20 text-slate-900 dark:text-slate-100 pl-12 pr-12 py-4 rounded-xl focus:ring-1 focus:ring-primary focus:border-primary outline-none transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-primary transition-colors focus:outline-none"
+                    </AnimatePresence>
+
+                    <div className="space-y-1.5">
+                      <label
+                        htmlFor="email"
+                        className="text-sm font-medium text-slate-700 dark:text-slate-300 ml-1"
                       >
-                        <Eye className="w-5 h-5" />
-                      </button>
+                        Email Address
+                      </label>
+                      <div className="relative">
+                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
+                        <input
+                          id="email"
+                          type="email"
+                          required
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          placeholder="name@example.com"
+                          className="w-full bg-slate-50 dark:bg-black/20 border border-slate-200 dark:border-primary/20 text-slate-900 dark:text-slate-100 pl-12 pr-4 py-4 rounded-xl focus:ring-1 focus:ring-primary focus:border-primary outline-none transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500"
+                        />
+                      </div>
                     </div>
-                  </div>
 
-                  <button
-                    type="submit"
-                    disabled={isLoading}
-                    className="w-full bg-primary hover:bg-primary-dark text-white font-bold py-4 rounded-xl shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2 mt-8 active:scale-[0.98]"
-                  >
-                    {isLoading ? (
-                      "Processing..."
-                    ) : (
-                      <>
-                        <span>{isLogin ? "Sign In" : "Create Account"}</span>
-                        <svg
-                          className="w-5 h-5 ml-1"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
+                    <div className="space-y-1.5">
+                      <div className="flex justify-between items-center px-1">
+                        <label
+                          htmlFor="password"
+                          className="text-sm font-medium text-slate-700 dark:text-slate-300"
                         >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                            d="M14 5l7 7m0 0l-7 7m7-7H3"
-                          />
-                        </svg>
-                      </>
-                    )}
-                  </button>
+                          Password
+                        </label>
+                        {isLogin && (
+                          <a
+                            href="#"
+                            className="text-xs font-semibold text-primary hover:underline"
+                          >
+                            Forgot Password?
+                          </a>
+                        )}
+                      </div>
+                      <div className="relative">
+                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
+                        <input
+                          id="password"
+                          type={showPassword ? "text" : "password"}
+                          required
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          placeholder="••••••••"
+                          className="w-full bg-slate-50 dark:bg-black/20 border border-slate-200 dark:border-primary/20 text-slate-900 dark:text-slate-100 pl-12 pr-12 py-4 rounded-xl focus:ring-1 focus:ring-primary focus:border-primary outline-none transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-primary transition-colors focus:outline-none"
+                        >
+                          <Eye className="w-5 h-5" />
+                        </button>
+                      </div>
+                    </div>
 
-                  <div className="relative flex items-center py-4">
-                    <div className="flex-grow border-t border-slate-200 dark:border-slate-800"></div>
-                    <span className="flex-shrink-0 mx-4 text-slate-400 dark:text-slate-500 text-xs uppercase tracking-wider font-semibold">
-                      Or continue with
-                    </span>
-                    <div className="flex-grow border-t border-slate-200 dark:border-slate-800"></div>
-                  </div>
+                    <button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="w-full bg-primary hover:bg-primary-dark text-white font-bold py-4 rounded-xl shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2 mt-8 active:scale-[0.98] disabled:opacity-60"
+                    >
+                      {isSubmitting ? (
+                        "Processing..."
+                      ) : (
+                        <>
+                          <span>{isLogin ? "Sign In" : "Create Account"}</span>
+                          <svg
+                            className="w-5 h-5 ml-1"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth="2"
+                              d="M14 5l7 7m0 0l-7 7m7-7H3"
+                            />
+                          </svg>
+                        </>
+                      )}
+                    </button>
 
-                  <button
-                    type="button"
-                    onClick={() =>
-                      (window.location.href = `${import.meta.env.VITE_API_URL || "http://localhost:3000/api"}/auth/google`)
-                    }
-                    className="w-full bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-white/10 text-slate-700 dark:text-slate-200 font-semibold py-3.5 rounded-xl transition-all flex items-center justify-center gap-3 active:scale-[0.98]"
-                  >
-                    <svg className="w-5 h-5" viewBox="0 0 24 24">
-                      <path
-                        fill="currentColor"
-                        d="M12.545,10.239v3.821h5.445c-0.712,2.315-2.647,3.972-5.445,3.972c-3.332,0-6.033-2.701-6.033-6.032s2.701-6.032,6.033-6.032c1.498,0,2.866,0.549,3.921,1.453l2.814-2.814C17.503,2.988,15.139,2,12.545,2C7.021,2,2.543,6.477,2.543,12s4.478,10,10.002,10c8.396,0,10.249-7.85,9.426-11.748L12.545,10.239z"
-                      />
-                    </svg>
-                    Google
-                  </button>
-                </form>
+                    <div className="relative flex items-center py-4">
+                      <div className="flex-grow border-t border-slate-200 dark:border-slate-800"></div>
+                      <span className="flex-shrink-0 mx-4 text-slate-400 dark:text-slate-500 text-xs uppercase tracking-wider font-semibold">
+                        Or continue with
+                      </span>
+                      <div className="flex-grow border-t border-slate-200 dark:border-slate-800"></div>
+                    </div>
 
-                <div className="mt-8 text-center pt-2">
-                  <p className="text-slate-500 dark:text-slate-400 text-sm flex items-center justify-center gap-1">
-                    <span>
-                      {isLogin
-                        ? "Don't have an account?"
-                        : "Already have an account?"}
-                    </span>
                     <button
                       type="button"
-                      onClick={toggleMode}
-                      className="text-primary font-bold hover:underline underline-offset-4 transition-all outline-none focus:text-primary-dark"
+                      onClick={() => googleLogin()}
+                      className="w-full bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-white/10 text-slate-700 dark:text-slate-200 font-semibold py-3.5 rounded-xl transition-all flex items-center justify-center gap-3 active:scale-[0.98]"
                     >
-                      {isLogin ? "Create Account" : "Sign In"}
+                      <svg className="w-5 h-5" viewBox="0 0 24 24">
+                        <path
+                          fill="currentColor"
+                          d="M12.545,10.239v3.821h5.445c-0.712,2.315-2.647,3.972-5.445,3.972c-3.332,0-6.033-2.701-6.033-6.032s2.701-6.032,6.033-6.032c1.498,0,2.866,0.549,3.921,1.453l2.814-2.814C17.503,2.988,15.139,2,12.545,2C7.021,2,2.543,6.477,2.543,12s4.478,10,10.002,10c8.396,0,10.249-7.85,9.426-11.748L12.545,10.239z"
+                        />
+                      </svg>
+                      Google
                     </button>
-                  </p>
-                </div>
-              </motion.div>
-            </AnimatePresence>
+                  </form>
+
+                  <div className="mt-8 text-center pt-2">
+                    <p className="text-slate-500 dark:text-slate-400 text-sm flex items-center justify-center gap-1">
+                      <span>
+                        {isLogin
+                          ? "Don't have an account?"
+                          : "Already have an account?"}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={toggleMode}
+                        className="text-primary font-bold hover:underline underline-offset-4 transition-all outline-none focus:text-primary-dark"
+                      >
+                        {isLogin ? "Create Account" : "Sign In"}
+                      </button>
+                    </p>
+                  </div>
+                </motion.div>
+              </AnimatePresence>
+            )}
 
             <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 opacity-20 text-[10px] tracking-[0.2em] font-bold uppercase text-slate-900 dark:text-slate-300 whitespace-nowrap hidden lg:block">
               {isLogin ? "Chapter I: Reflection" : "Prologue: The Blank Page"}
