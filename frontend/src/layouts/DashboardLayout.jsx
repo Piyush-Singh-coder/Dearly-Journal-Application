@@ -16,6 +16,7 @@ import {
   Sun,
   Moon,
 } from "lucide-react";
+import logoImg from "../assets/dearly-logo.png";
 import clsx from "clsx";
 import { AnimatePresence, motion } from "framer-motion";
 
@@ -54,7 +55,11 @@ export default function DashboardLayout() {
             to="/"
             className="flex items-center gap-2 text-primary hover:opacity-80 transition-opacity"
           >
-            <BookOpen className="w-7 h-7 sm:w-8 sm:h-8" />
+            <img
+              src={logoImg}
+              alt="Dearly Logo"
+              className="w-7 h-7 sm:w-9 sm:h-9 object-contain drop-shadow-sm"
+            />
             <span className="text-xl font-bold tracking-tight hidden sm:block">
               Dearly
             </span>

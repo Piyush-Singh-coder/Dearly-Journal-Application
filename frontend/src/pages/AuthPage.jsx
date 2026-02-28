@@ -4,6 +4,7 @@ import { useAuthStore } from "../store/authStore";
 import { motion, AnimatePresence } from "framer-motion";
 import { BookOpen, Eye, Mail, Lock, User as UserIcon } from "lucide-react";
 import toast from "react-hot-toast";
+import logoImg from "../assets/dearly-logo.png";
 
 export default function AuthPage() {
   const navigate = useNavigate();
@@ -81,7 +82,11 @@ export default function AuthPage() {
               onClick={() => navigate("/")}
             >
               <div className="text-primary group-hover:scale-105 transition-transform duration-300">
-                <BookOpen className="w-10 h-10" />
+                <img
+                  src={logoImg}
+                  alt="Dearly Logo"
+                  className="w-10 h-10 object-contain drop-shadow-sm"
+                />
               </div>
               <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
                 Dearly

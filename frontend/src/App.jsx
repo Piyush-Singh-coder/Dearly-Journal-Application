@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 import { useAuthStore } from "./store/authStore";
 import { BookOpen } from "lucide-react";
+import logoImg from "./assets/dearly-logo.png";
 
 // Layouts & Pages (To be created)
 import LandingPage from "./pages/LandingPage";
@@ -51,7 +52,11 @@ function App() {
     return (
       <div className="h-screen w-full flex flex-col items-center justify-center bg-surface dark:bg-surface-dark overflow-hidden font-display">
         <div className="relative">
-          <BookOpen className="w-16 h-16 text-primary animate-pulse relative z-10" />
+          <img
+            src={logoImg}
+            alt="Dearly Logo"
+            className="w-16 h-16 animate-pulse relative z-10 object-contain drop-shadow-md"
+          />
           <div className="absolute inset-0 bg-primary/30 blur-2xl rounded-full animate-pulse delay-75 scale-150"></div>
         </div>
         <div className="mt-8 flex flex-col items-center gap-2">
