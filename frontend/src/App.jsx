@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 import { useAuthStore } from "./store/authStore";
 import { BookOpen } from "lucide-react";
-import logoImg from "./assets/dearly-logo.png";
+import logoImg from "./assets/dearly-logo.webp";
 
 // Layouts & Pages (To be created)
 import LandingPage from "./pages/LandingPage";

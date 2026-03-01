@@ -17,7 +17,7 @@ import {
   Flame,
   Heart,
 } from "lucide-react";
-import logoImg from "../assets/dearly-logo.png";
+import logoImg from "../assets/dearly-logo.webp";
 
 export default function LandingPage() {
   const { isAuthenticated } = useAuthStore();

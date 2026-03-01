@@ -16,7 +16,7 @@ import {
   Sun,
   Moon,
 } from "lucide-react";
-import logoImg from "../assets/dearly-logo.png";
+import logoImg from "../assets/dearly-logo.webp";
 import clsx from "clsx";
 import { AnimatePresence, motion } from "framer-motion";
 

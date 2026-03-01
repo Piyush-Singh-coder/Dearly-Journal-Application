@@ -4,7 +4,7 @@ import { useAuthStore } from "../store/authStore";
 import { motion, AnimatePresence } from "framer-motion";
 import { BookOpen, Eye, Mail, Lock, User as UserIcon } from "lucide-react";
 import toast from "react-hot-toast";
-import logoImg from "../assets/dearly-logo.png";
+import logoImg from "../assets/dearly-logo.webp";
 
 export default function AuthPage() {
   const navigate = useNavigate();
