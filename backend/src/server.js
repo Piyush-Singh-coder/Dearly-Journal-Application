@@ -12,6 +12,11 @@ import uploadRoute from "./routes/uploadRoute.js";
 const app = express();
 const server = http.createServer(app);
 
+// Health check endpoint — placed BEFORE CORS so it responds to any origin
+app.get("/api/health", (req, res) => {
+  res.status(200).json({ status: "ok" });
+});
+
 //Cors
 app.use(
   cors({
@@ -29,11 +34,6 @@ app.use("/api/entries", entryRoute);
 app.use("/api/notebooks", notebookRoute);
 app.use("/api/community", communityRoute);
 app.use("/api/upload", uploadRoute);
-
-// Health check endpoint for Render spin-up pings
-app.get("/api/health", (req, res) => {
-  res.status(200).json({ status: "ok" });
-});
 
 server.listen(3000, () => {
   console.log("Server is running on port 3000");

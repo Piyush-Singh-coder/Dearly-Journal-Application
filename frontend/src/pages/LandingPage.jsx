@@ -25,18 +25,10 @@ export default function LandingPage() {
 
   // Opportunistic background ping to wake up free-tier Render backend
   React.useEffect(() => {
-    const wakeupBackend = async () => {
-      try {
-        const apiUrl = import.meta.env.VITE_API_URL;
-        if (apiUrl) {
-          // Fire and forget health check
-          fetch(`${apiUrl}/health`).catch(() => {});
-        }
-      } catch (err) {
-        // Silently ignore ping errors
-      }
-    };
-    wakeupBackend();
+    const apiUrl = import.meta.env.VITE_API_URL;
+    if (apiUrl) {
+      fetch(`${apiUrl}/health`, { mode: "no-cors" }).catch(() => {});
+    }
   }, []);
 
   const handleCTA = () => {
