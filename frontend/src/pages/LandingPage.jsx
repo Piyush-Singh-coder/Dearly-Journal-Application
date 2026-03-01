@@ -23,14 +23,6 @@ export default function LandingPage() {
   const { isAuthenticated } = useAuthStore();
   const navigate = useNavigate();
 
-  // Opportunistic background ping to wake up free-tier Render backend
-  React.useEffect(() => {
-    const apiUrl = import.meta.env.VITE_API_URL;
-    if (apiUrl) {
-      fetch(`${apiUrl}/health`, { mode: "no-cors" }).catch(() => {});
-    }
-  }, []);
-
   const handleCTA = () => {
     if (isAuthenticated) {
       navigate("/dashboard");
