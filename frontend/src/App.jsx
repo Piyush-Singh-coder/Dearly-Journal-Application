@@ -20,34 +20,9 @@ import JoinNotebook from "./pages/JoinNotebook";
 import SettingsPage from "./pages/SettingsPage";
 
 const ProtectedRoute = ({ children }) => {
-  const { isAuthenticated } = useAuthStore();
-  return isAuthenticated ? children : <Navigate to="/auth" replace />;
-};
+  const { isAuthenticated, isLoading } = useAuthStore();
 
-function App() {
-  const { user, checkAuth, isLoading } = useAuthStore();
-
-  useEffect(() => {
-    checkAuth();
-  }, [checkAuth]);
-
-  // Apply theme to document globally
-  useEffect(() => {
-    const theme = user?.settings?.theme || "system";
-    const applyTheme = (t) => {
-      const isDark =
-        t === "dark" ||
-        (t === "system" &&
-          window.matchMedia("(prefers-color-scheme: dark)").matches);
-      if (isDark) {
-        document.documentElement.classList.add("dark");
-      } else {
-        document.documentElement.classList.remove("dark");
-      }
-    };
-    applyTheme(theme);
-  }, [user?.settings?.theme]);
-
+  // Show spinner only for protected routes while auth resolves
   if (isLoading) {
     return (
       <div className="h-screen w-full flex flex-col items-center justify-center bg-surface dark:bg-surface-dark overflow-hidden font-display">
@@ -70,6 +45,36 @@ function App() {
       </div>
     );
   }
+
+  return isAuthenticated ? children : <Navigate to="/auth" replace />;
+};
+
+function App() {
+  const { user, checkAuth } = useAuthStore();
+
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
+
+  // Apply theme to document globally
+  useEffect(() => {
+    const theme = user?.settings?.theme || "system";
+    const applyTheme = (t) => {
+      const isDark =
+        t === "dark" ||
+        (t === "system" &&
+          window.matchMedia("(prefers-color-scheme: dark)").matches);
+      if (isDark) {
+        document.documentElement.classList.add("dark");
+      } else {
+        document.documentElement.classList.remove("dark");
+      }
+    };
+    applyTheme(theme);
+  }, [user?.settings?.theme]);
+
+  // Public pages render immediately — no loading gate at root level
+
 
   return (
     <BrowserRouter>
