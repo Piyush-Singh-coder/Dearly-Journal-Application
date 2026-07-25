@@ -27,7 +27,7 @@ export default function AuthPage() {
   const [fullName, setFullName] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
-  const { login, signup, googleLogin, isAuthenticated } = useAuthStore();
+  const { login, signup, isAuthenticated } = useAuthStore();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -265,28 +265,6 @@ export default function AuthPage() {
                           </svg>
                         </>
                       )}
-                    </button>
-
-                    <div className="relative flex items-center py-4">
-                      <div className="flex-grow border-t border-slate-200 dark:border-slate-800"></div>
-                      <span className="flex-shrink-0 mx-4 text-slate-400 dark:text-slate-500 text-xs uppercase tracking-wider font-semibold">
-                        Or continue with
-                      </span>
-                      <div className="flex-grow border-t border-slate-200 dark:border-slate-800"></div>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => googleLogin()}
-                      className="w-full bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-white/10 text-slate-700 dark:text-slate-200 font-semibold py-3.5 rounded-xl transition-all flex items-center justify-center gap-3 active:scale-[0.98]"
-                    >
-                      <svg className="w-5 h-5" viewBox="0 0 24 24">
-                        <path
-                          fill="currentColor"
-                          d="M12.545,10.239v3.821h5.445c-0.712,2.315-2.647,3.972-5.445,3.972c-3.332,0-6.033-2.701-6.033-6.032s2.701-6.032,6.033-6.032c1.498,0,2.866,0.549,3.921,1.453l2.814-2.814C17.503,2.988,15.139,2,12.545,2C7.021,2,2.543,6.477,2.543,12s4.478,10,10.002,10c8.396,0,10.249-7.85,9.426-11.748L12.545,10.239z"
-                        />
-                      </svg>
-                      Google
                     </button>
                   </form>
 

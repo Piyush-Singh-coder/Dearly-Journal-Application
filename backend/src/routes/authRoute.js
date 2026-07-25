@@ -5,7 +5,6 @@ import {
   logout,
   profile,
   verifyEmail,
-  googleAuth,
   updateProfile,
   updateSettings,
   changePassword,
@@ -19,7 +18,6 @@ const router = express.Router();
 router.post("/register", register);
 router.get("/verify-email", verifyEmail);
 router.post("/login", login);
-router.post("/google", googleAuth);
 
 // Protected routes (require valid JWT)
 router.post("/logout", protect, logout);

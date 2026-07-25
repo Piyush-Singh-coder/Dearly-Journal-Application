@@ -1,6 +1,5 @@
 import { create } from "zustand";
 import axios from "axios";
-import { supabase } from "../lib/supabase";
 
 export const axiosInstance = axios.create({
   baseURL: import.meta.env.VITE_API_URL || "http://localhost:3000/api",
@@ -43,49 +42,6 @@ export const useAuthStore = create((set) => ({
     } catch (error) {
       set({
         error: error.response?.data?.message || "Error logging in",
-      });
-      throw error;
-    }
-  },
-
-  googleLogin: async () => {
-    set({ isLoading: true, error: null });
-    try {
-      // 1. Trigger Supabase Google OAuth popup
-      const { error: oauthError } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-        },
-      });
-      if (oauthError) throw oauthError;
-      // Redirect is handled by Supabase — the flow continues in AuthCallback
-    } catch (error) {
-      set({
-        error: error.message || "Google sign-in failed",
-        isLoading: false,
-      });
-      throw error;
-    }
-  },
-
-  // Called by AuthCallback after the OAuth redirect with the Supabase session
-  loginWithSupabaseSession: async (access_token) => {
-    set({ isLoading: true, error: null });
-    try {
-      const res = await axiosInstance.post("/auth/google", { access_token });
-      localStorage.setItem("token", res.data.token);
-      set({
-        user: res.data.user,
-        isAuthenticated: true,
-        token: res.data.token,
-        isLoading: false,
-      });
-      return res.data;
-    } catch (error) {
-      set({
-        error: error.response?.data?.message || "Google authentication failed",
-        isLoading: false,
       });
       throw error;
     }

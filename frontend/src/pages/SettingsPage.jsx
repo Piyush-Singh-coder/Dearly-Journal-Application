@@ -408,21 +408,10 @@ export default function SettingsPage() {
               Account Settings
             </h3>
 
-            {user?.googleId ? (
-              <div className="bg-slate-50 dark:bg-surface-container-dark p-6 rounded-2xl border border-slate-100 dark:border-slate-800 mb-10 max-w-xl">
-                <h4 className="font-medium text-slate-900 dark:text-white mb-2">
-                  Connected via Google
-                </h4>
-                <p className="text-slate-600 dark:text-slate-400 text-sm">
-                  You sign in using your Google account. Password changes are
-                  managed through Google.
-                </p>
-              </div>
-            ) : (
-              <form
-                onSubmit={handleChangePassword}
-                className="space-y-6 max-w-xl mb-12"
-              >
+            <form
+              onSubmit={handleChangePassword}
+              className="space-y-6 max-w-xl mb-12"
+            >
                 <h4 className="font-semibold text-slate-900 dark:text-white border-b border-slate-100 dark:border-slate-800 pb-2">
                   Change Password
                 </h4>
@@ -464,7 +453,6 @@ export default function SettingsPage() {
                   </button>
                 </div>
               </form>
-            )}
 
             <div className="max-w-xl">
               <h4 className="font-semibold text-red-600 dark:text-red-400 border-b border-red-100 dark:border-red-900/30 pb-2 mb-6">
