@@ -1,21 +1,19 @@
-import { createClient } from "@supabase/supabase-js";
 import multer from "multer";
+import { uploadToS3, deleteFromS3 } from "../lib/s3.js";
 
-// Use service role key to bypass RLS
-const supabaseAdmin = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY,
-);
-
-// Store file in memory as a Buffer (no disk writes needed)
+// Store file in memory as a Buffer before S3 upload
 export const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit for images & audio
   fileFilter: (req, file, cb) => {
-    if (!file.mimetype.startsWith("image/")) {
-      return cb(new Error("Only image files are allowed"), false);
+    if (
+      file.mimetype.startsWith("image/") ||
+      file.mimetype.startsWith("audio/")
+    ) {
+      cb(null, true);
+    } else {
+      cb(new Error("Only image and audio files are allowed"), false);
     }
-    cb(null, true);
   },
 });
 
@@ -26,29 +24,40 @@ export const uploadFile = async (req, res) => {
       return res.status(400).json({ message: "No file provided." });
     }
 
-    const { folder = "uploads" } = req.body; // e.g. "avatars" or "covers"
-    const ext = req.file.originalname.split(".").pop();
-    const fileName = `${folder}/${req.user.id}-${Date.now()}.${ext}`;
+    const { folder = "uploads" } = req.body;
+    const ext = req.file.originalname ? req.file.originalname.split(".").pop() : "bin";
+    const userId = req.user ? req.user.id : "anonymous";
+    const objectKey = `${userId}/${folder}/${Date.now()}_${Math.random().toString(36).substring(7)}.${ext}`;
 
-    const { error } = await supabaseAdmin.storage
-      .from("avatars") // single bucket, subfolders via fileName path
-      .upload(fileName, req.file.buffer, {
-        contentType: req.file.mimetype,
-        upsert: true,
-      });
+    const publicUrl = await uploadToS3(
+      req.file.buffer,
+      objectKey,
+      req.file.mimetype
+    );
 
-    if (error) {
-      console.error("Supabase upload error:", error);
-      return res.status(500).json({ message: error.message });
+    return res.status(200).json({
+      url: publicUrl,
+      fileType: req.file.mimetype,
+      storagePath: objectKey,
+    });
+  } catch (err) {
+    console.error("S3 Upload error:", err);
+    return res.status(500).json({ message: err.message || "Upload to AWS S3 failed." });
+  }
+};
+
+// DELETE /api/upload
+export const deleteFile = async (req, res) => {
+  try {
+    const { storagePath } = req.body;
+    if (!storagePath) {
+      return res.status(400).json({ message: "storagePath is required" });
     }
 
-    const {
-      data: { publicUrl },
-    } = supabaseAdmin.storage.from("avatars").getPublicUrl(fileName);
-
-    return res.status(200).json({ url: publicUrl });
+    await deleteFromS3(storagePath);
+    return res.status(200).json({ message: "File deleted successfully" });
   } catch (err) {
-    console.error("Upload error:", err);
-    return res.status(500).json({ message: "Upload failed." });
+    console.error("S3 Delete error:", err);
+    return res.status(500).json({ message: err.message || "Delete from S3 failed." });
   }
 };

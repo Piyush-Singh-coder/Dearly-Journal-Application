@@ -48,10 +48,10 @@ Dearly leverages a modern, decoupled architecture splitting a lightweight JavaSc
 ### Backend
 - **Runtime:** Node.js, Express.js
 - **Database ORM:** Prisma
-- **Database Engine:** PostgreSQL (Supabase)
-- **Authentication & Storage:** Supabase Auth (JWT-based), Supabase Storage (S3-compatible bucket for media/audio)
-- **Real-time Server:** Hocuspocus (A robust, highly scalable Node.js extension for Yjs WebSocket connections)
-- **Security & Utils:** bcryptjs (hashing), crypto, Nodemailer (for transactional emails)
+- **Database Engine:** PostgreSQL (AWS RDS or Supabase)
+- **File Storage:** AWS S3 (S3 SDK v3 for media/audio attachments)
+- **Real-time Server:** Socket.io & Hocuspocus (WebSocket connections on AWS EC2)
+- **Deployment:** AWS Amplify (Frontend), AWS EC2 (Backend), AWS S3 (Storage), AWS RDS (Database). See [AWS Deployment Guide](file:///c:/Users/pmiay/OneDrive/Documents/Dearly-JournalApplication/AWS_DEPLOYMENT_GUIDE.md).
 
 ---
 

@@ -1,57 +1,39 @@
-import { supabase } from "./supabase";
-
-const BUCKET_NAME = "journal-attachments";
+import { axiosInstance } from "../store/authStore";
 
 /**
- * Upload a file to Supabase Storage.
+ * Upload a file to AWS S3 via the Node.js backend.
  * @param {File} file - The file object (image, audio, etc.)
- * @param {string} userId - The current user's ID (used as a folder prefix)
- * @param {string} [folder="entries"] - Optional sub-folder within the user directory
- * @returns {Promise<{url: string, fileType: string}>} The public URL and MIME type
+ * @param {string} userId - The current user's ID
+ * @param {string} [folder="entries"] - Optional folder within user directory
+ * @returns {Promise<{url: string, fileType: string, storagePath: string}>}
  */
 export async function uploadFile(file, userId, folder = "entries") {
-  const timestamp = Date.now();
-  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-  const filePath = `${userId}/${folder}/${timestamp}_${safeName}`;
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("folder", folder);
 
-  const { error } = await supabase.storage
-    .from(BUCKET_NAME)
-    .upload(filePath, file, {
-      cacheControl: "3600",
-      upsert: false,
-      contentType: file.type,
-    });
-
-  if (error) {
-    console.error("Supabase upload error:", error);
-    throw new Error(`Upload failed: ${error.message}`);
-  }
-
-  const {
-    data: { publicUrl },
-  } = supabase.storage.from(BUCKET_NAME).getPublicUrl(filePath);
+  const response = await axiosInstance.post("/upload", formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
 
   return {
-    url: publicUrl,
-    fileType: file.type,
-    storagePath: filePath,
+    url: response.data.url,
+    fileType: response.data.fileType || file.type,
+    storagePath: response.data.storagePath,
   };
 }
 
 /**
- * Delete a file from Supabase Storage by its path.
- * @param {string} storagePath - The full storage path (e.g. "userId/entries/123_photo.jpg")
+ * Delete a file from AWS S3 via the backend API.
+ * @param {string} storagePath - The full object key path in S3
  * @returns {Promise<void>}
  */
 export async function deleteFile(storagePath) {
-  const { error } = await supabase.storage
-    .from(BUCKET_NAME)
-    .remove([storagePath]);
-
-  if (error) {
-    console.error("Supabase delete error:", error);
-    throw new Error(`Delete failed: ${error.message}`);
-  }
+  await axiosInstance.delete("/upload", {
+    data: { storagePath },
+  });
 }
 
 /**
