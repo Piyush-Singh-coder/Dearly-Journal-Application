@@ -17,10 +17,15 @@ app.get("/api/health", (req, res) => {
   res.status(200).json({ status: "ok" });
 });
 
-//Cors
+// Cors
+const corsOrigin =
+  !process.env.CLIENT_URL || process.env.CLIENT_URL === "*"
+    ? true
+    : process.env.CLIENT_URL;
+
 app.use(
   cors({
-    origin: process.env.CLIENT_URL || "http://localhost:5173",
+    origin: corsOrigin,
     credentials: true,
   }),
 );
