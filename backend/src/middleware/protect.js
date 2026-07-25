@@ -19,7 +19,8 @@ export const protect = async (req, res, next) => {
 
   try {
     // 1. Verify and decode the token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const secret = process.env.JWT_SECRET || "dearly_default_jwt_secret_key_2026";
+    const decoded = jwt.verify(token, secret);
 
     // 2. Fetch fresh user from DB (ensures deleted/banned users can't use old tokens)
     const user = await prisma.user.findUnique({

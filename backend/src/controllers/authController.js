@@ -173,7 +173,7 @@ export const login = async (req, res) => {
       .json({ message: "Login successful", token, user: safeUser });
   } catch (error) {
     console.error("Login error:", error);
-    return res.status(500).json({ message: "Internal server error." });
+    return res.status(500).json({ message: error.message || "Internal server error." });
   }
 };
 
