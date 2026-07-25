@@ -1,6 +1,7 @@
 # Complete AWS Deployment & Setup Guide for Dearly Journal Application
 
 This guide provides a step-by-step walkthrough for deploying **Dearly Journal Application** to Amazon Web Services (AWS) using:
+
 - **AWS Amplify** (Frontend Hosting - React/Vite SPA)
 - **AWS EC2** (Backend API & WebSocket Server - Node.js/Express/Socket.io)
 - **AWS S3** (Object Storage for User Avatars & Journal Media)
@@ -48,14 +49,32 @@ All services selected in this guide qualify for **AWS 12-Month Free Tier**, ensu
 ## Step 2: Set Up AWS S3 (Media Storage) & IAM Credentials
 
 ### 1. Create S3 Bucket
+
 1. Go to **AWS Console ➔ S3**.
 2. Click **Create bucket**:
+
    - **Bucket name**: `dearly-journal-media-bucket` (must be globally unique)
    - **AWS Region**: Select your nearest region (e.g. `us-east-1`)
    - **Object Ownership**: ACLs disabled (recommended)
    - **Block Public Access**: Uncheck "Block all public access" (Acknowledge warning so media URLs can be publicly viewed in journal entries)
+
+   ```json
+   {
+     "Version": "2012-10-17",
+     "Statement": [
+       {
+         "Sid": "PublicReadGetObject",
+         "Effect": "Allow",
+         "Principal": "*",
+         "Action": "s3:GetObject",
+         "Resource": "arn:aws:s3:::dearly-journal-media-bucket/*"
+       }
+     ]
+   }
+   ```
 3. Click **Create bucket**.
 4. Go to your bucket's **Permissions** tab ➔ **Bucket policy** ➔ Edit:
+
    ```json
    {
      "Version": "2012-10-17",
@@ -71,6 +90,7 @@ All services selected in this guide qualify for **AWS 12-Month Free Tier**, ensu
    }
    ```
 5. Set **CORS Configuration** (Permissions tab ➔ Cross-origin resource sharing):
+
    ```json
    [
      {
@@ -83,12 +103,13 @@ All services selected in this guide qualify for **AWS 12-Month Free Tier**, ensu
    ```
 
 ### 2. Create IAM User Credentials
+
 1. Go to **AWS Console ➔ IAM ➔ Users ➔ Create user**.
 2. Username: `dearly-s3-user`.
 3. Select **Attach policies directly** ➔ Search for `AmazonS3FullAccess` and attach it.
 4. Click **Create user**.
 5. Select the newly created user ➔ **Security credentials** tab ➔ **Create access key**.
-6. Select **Command Line Interface (CLI)** or **Application running outside AWS**.
+6. Select **Com****mand Line Interface (CLI)** or **Application running outside AWS**.
 7. Copy the **Access Key ID** and **Secret Access Key**.
 
 ---
@@ -96,6 +117,7 @@ All services selected in this guide qualify for **AWS 12-Month Free Tier**, ensu
 ## Step 3: Set Up AWS EC2 (Backend API & WebSocket Server)
 
 ### 1. Launch EC2 Instance
+
 1. Go to **AWS Console ➔ EC2 ➔ Launch Instance**:
    - **Name**: `dearly-backend-server`
    - **OS Image**: **Ubuntu 24.04 LTS** (Free tier eligible)
@@ -106,16 +128,25 @@ All services selected in this guide qualify for **AWS 12-Month Free Tier**, ensu
      - Allow **HTTP** (Port 80) from Anywhere
      - Allow **HTTPS** (Port 443) from Anywhere
      - Allow Custom TCP **Port 3000** from Anywhere
+   - **Configure Storage**: Change from **8 GiB** to **20 GiB** (or **30 GiB** gp3). *(AWS Free Tier includes up to 30 GB of EBS storage completely free!)*
 2. Click **Launch Instance**.
 
 ### 2. Configure EC2 Server Environment
-Open PowerShell/Terminal on your machine and connect to EC2:
+
+> **Note:** If you connected using **EC2 Instance Connect** in your browser (prompt shows `ubuntu@ip-...`), you are **already connected**! Skip `chmod` and `ssh` commands and go directly to **Step B**.
+
+#### Option A: Connecting from your local computer terminal
+
 ```bash
+# Run this on your LOCAL computer (in the folder where dearly-key.pem was downloaded)
 chmod 400 dearly-key.pem
 ssh -i "dearly-key.pem" ubuntu@YOUR_EC2_PUBLIC_IP
 ```
 
-Inside your EC2 instance, install Node.js 20, Git, and PM2:
+#### Option B: Setup inside your EC2 terminal
+
+Inside your EC2 server prompt (`ubuntu@ip-...`), install Node.js 20, Git, and PM2:
+
 ```bash
 sudo apt update && sudo apt upgrade -y
 curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
@@ -124,6 +155,7 @@ sudo npm install -g pm2
 ```
 
 Clone your repository and setup the backend:
+
 ```bash
 git clone https://github.com/Piyush-Singh-coder/Dearly-Journal-Application.git
 cd Dearly-Journal-Application/backend
@@ -131,10 +163,13 @@ npm install
 ```
 
 Create `.env` inside `backend/`:
+
 ```bash
 nano .env
 ```
+
 Paste your environment variables:
+
 ```env
 PORT=3000
 DATABASE_URL="postgresql://dearly_admin:YOUR_PASSWORD@dearly-db.xxxxxx.us-east-1.rds.amazonaws.com:5432/postgres?schema=public"
@@ -151,6 +186,7 @@ CLIENT_URL="https://main.xxxxxxxx.amplifyapp.com"
 ```
 
 Push schema & start backend with PM2:
+
 ```bash
 npx prisma generate
 pm2 start ecosystem.config.cjs
